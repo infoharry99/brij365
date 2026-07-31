@@ -713,9 +713,9 @@
                 @if ($canPost)
                     <footer class="b360-thread-composer">
                         <div class="b360-composer-stack">
-                            <form method="POST" action="{{ route('collaboration.chat.conversations.messages.store', $selectedConversation) }}" enctype="multipart/form-data" class="b360-composer-box" x-ref="composer" x-on:submit.prevent="sendMessage" onpaste="window.handlePaste ? window.handlePaste(event) : null">
+                            <form method="POST" action="{{ route('collaboration.chat.conversations.messages.store', $selectedConversation) }}" enctype="multipart/form-data" class="b360-composer-box" x-ref="composer" x-on:submit.prevent="sendMessage">
                                 @csrf
-                                <textarea name="body" maxlength="10000" placeholder="Write a message…" aria-label="Message" x-on:input="handleComposerInput" x-on:keydown.enter="handleComposerKeydown" onpaste="window.handlePaste ? window.handlePaste(event) : null" x-bind:disabled="busy"></textarea>
+                                <textarea name="body" maxlength="10000" placeholder="Write a message…" aria-label="Message" x-on:input="handleComposerInput" x-on:keydown.enter="handleComposerKeydown" x-bind:disabled="busy"></textarea>
                                 <div class="b360-chat-attachment-selection" x-show="selectedAttachments && selectedAttachments.length > 0" x-cloak aria-label="Selected attachments">
                                     <template x-for="attachment in selectedAttachments" x-bind:key="attachment.key">
                                         <span class="b360-chat-selected-file">
@@ -889,38 +889,34 @@
             }
 
             window.handlePaste = function(event) {
+                if (! event || event._handlePasteProcessed) return;
+                event._handlePasteProcessed = true;
+
                 const clipboard = event?.clipboardData || window.clipboardData;
                 if (! clipboard) return;
 
                 const files = [];
-                const seenKeys = new Set();
 
+                // 1. Check clipboard items FIRST (screenshots, canvas, printscreen, browser images)
                 if (clipboard.items && clipboard.items.length > 0) {
                     Array.from(clipboard.items).forEach(function(item) {
                         if (item.type && item.type.startsWith('image/')) {
                             try {
                                 const file = item.getAsFile();
                                 if (file) {
-                                    const key = (file.name || 'image') + '-' + (file.size || 0);
-                                    if (! seenKeys.has(key)) {
-                                        files.push(file);
-                                        seenKeys.add(key);
-                                    }
+                                    files.push(file);
                                 }
                             } catch (_e) {}
                         }
                     });
                 }
 
-                if (clipboard.files && clipboard.files.length > 0) {
+                // 2. Check direct clipboard files ONLY IF no image items were found in items
+                if (files.length === 0 && clipboard.files && clipboard.files.length > 0) {
                     Array.from(clipboard.files).forEach(function(file) {
                         const isImg = file.type ? file.type.startsWith('image/') : /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '');
                         if (isImg) {
-                            const key = (file.name || 'image') + '-' + (file.size || 0);
-                            if (! seenKeys.has(key)) {
-                                files.push(file);
-                                seenKeys.add(key);
-                            }
+                            files.push(file);
                         }
                     });
                 }
@@ -948,6 +944,7 @@
                 if (typeof DataTransfer === 'undefined') return;
 
                 const transfer = new DataTransfer();
+                // Note: Replace existing attachments on new image paste or append cleanly
                 Array.from(input.files || []).forEach(function(f) { transfer.items.add(f); });
 
                 let addedCount = 0;

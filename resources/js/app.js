@@ -1821,13 +1821,15 @@ Alpine.data('chatRealtime', () => ({
     },
 
     handlePaste(event) {
+        if (! event || event._handlePasteProcessed) return;
+        event._handlePasteProcessed = true;
+
         const clipboard = event?.clipboardData || window.clipboardData;
         if (! clipboard) {
             return;
         }
 
         const files = [];
-        const seenKeys = new Set();
 
         // 1. Check clipboard items (Screenshots, Snipping tool, Browser copied images, Canvas)
         if (clipboard.items && clipboard.items.length > 0) {
@@ -1836,27 +1838,19 @@ Alpine.data('chatRealtime', () => ({
                     try {
                         const file = item.getAsFile();
                         if (file) {
-                            const key = `${file.name || 'image'}-${file.size || 0}`;
-                            if (! seenKeys.has(key)) {
-                                files.push(file);
-                                seenKeys.add(key);
-                            }
+                            files.push(file);
                         }
                     } catch (_e) {}
                 }
             });
         }
 
-        // 2. Check direct clipboard files (File manager copies, Desktop files)
-        if (clipboard.files && clipboard.files.length > 0) {
+        // 2. Check direct clipboard files ONLY IF no image items were found in items
+        if (files.length === 0 && clipboard.files && clipboard.files.length > 0) {
             Array.from(clipboard.files).forEach((file) => {
                 const isImg = file.type ? file.type.startsWith('image/') : /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '');
                 if (isImg) {
-                    const key = `${file.name || 'image'}-${file.size || 0}`;
-                    if (! seenKeys.has(key)) {
-                        files.push(file);
-                        seenKeys.add(key);
-                    }
+                    files.push(file);
                 }
             });
         }
