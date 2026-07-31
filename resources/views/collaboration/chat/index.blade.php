@@ -569,6 +569,27 @@
             animation: b360MessagePulse 2.2s ease-in-out forwards !important;
             border-radius: 8px !important;
         }
+
+        /* Brand Orange (#F5862D) Color Overrides */
+        .b360-collab-logo {
+            background: #F5862D !important;
+            box-shadow: 0 8px 20px rgba(245, 134, 45, 0.3) !important;
+        }
+        .b360-composer-send {
+            background: #F5862D !important;
+            box-shadow: 0 8px 18px rgba(245, 134, 45, 0.3) !important;
+            margin-right: 60px !important;
+        }
+        .b360-composer-send:hover {
+            background: #E0731B !important;
+            transform: translateY(-1px);
+        }
+        .b360-collab-filters a.is-active,
+        .b360-collab-pill-tabs a.is-active {
+            background: #F5862D !important;
+            color: #FFFFFF !important;
+            border-color: #F5862D !important;
+        }
 </style>
 @section('content')
     <section
