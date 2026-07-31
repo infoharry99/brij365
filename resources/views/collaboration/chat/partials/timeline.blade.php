@@ -141,7 +141,7 @@
                         type="button"
                         class="b360-chat-reply-action"
                         data-message-id="{{ $message->id }}"
-                        data-message-label="{{ $message->message_number }}"
+                        data-message-label="{{ $message->sender?->name ?? 'Message' }}: &quot;{{ str($message->body ?? 'Attachment')->squish()->limit(50) }}&quot;"
                         data-message-sender="{{ $message->sender?->name ?? 'Message' }}"
                         data-message-body="{{ str($message->body ?? 'Attachment')->squish()->limit(90) }}"
                         x-on:click.stop="selectReply($event)"
