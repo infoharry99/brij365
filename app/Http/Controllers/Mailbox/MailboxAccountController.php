@@ -616,6 +616,21 @@ class MailboxAccountController extends Controller
         return Storage::disk($mailboxAttachment->disk)->download($mailboxAttachment->path, $mailboxAttachment->filename, ['Content-Type' => $mailboxAttachment->mime_type]);
     }
 
+    public function previewAttachment(Request $request, MailboxAttachment $mailboxAttachment): \Symfony\Component\HttpFoundation\Response
+    {
+        $this->authorize('view', $mailboxAttachment->email->account);
+        abort_unless(Storage::disk($mailboxAttachment->disk)->exists($mailboxAttachment->path), 404);
+
+        return Storage::disk($mailboxAttachment->disk)->response(
+            $mailboxAttachment->path,
+            $mailboxAttachment->filename,
+            [
+                'Content-Type' => $mailboxAttachment->mime_type ?: 'application/octet-stream',
+                'Content-Disposition' => 'inline; filename="' . addslashes($mailboxAttachment->filename) . '"',
+            ]
+        );
+    }
+
     /** @return array<string, mixed> */
     private function externalComposeContext(Request $request, MailboxAccount $account, ?MailboxEmail $selected, ?MailboxOutboxMessage $draft): array
     {

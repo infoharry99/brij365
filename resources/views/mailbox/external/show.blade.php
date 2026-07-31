@@ -888,14 +888,56 @@
 
             {{-- Attachments --}}
             @if($msg->attachments?->isNotEmpty())
-              <div class="mbx-ca">
-                <strong>Attachments</strong>
-                @foreach($msg->attachments as $att)
-                  <a href="{{ route('mailbox.attachments.download', $att) }}">
-                    <i class="fa-solid fa-paperclip" style="font-size:11px" aria-hidden="true"></i>
-                    {{ $att->filename ?? $att->original_filename ?? 'File' }}
-                  </a>
-                @endforeach
+              <div class="mbx-ca" style="margin-top:14px; padding-top:10px; border-top:1px solid var(--c-border, #E2E8F0);">
+                <strong style="display:block; font-size:12.5px; color:var(--c-muted, #64748B); margin-bottom:8px;">
+                  <i class="fa-solid fa-paperclip" aria-hidden="true"></i> Attachments ({{ $msg->attachments->count() }})
+                </strong>
+                <div class="mbx-attachment-grid" style="display:flex; flex-wrap:wrap; gap:8px;">
+                  @foreach($msg->attachments as $att)
+                    @php
+                      $isImg = str_starts_with($att->mime_type ?? '', 'image/');
+                      $isPdf = ($att->mime_type ?? '') === 'application/pdf';
+                      $previewUrl = route('mailbox.attachments.preview', $att);
+                      $downloadUrl = route('mailbox.attachments.download', $att);
+                      $sizeKb = number_format(($att->size ?? 0) / 1024, 1);
+                      $fileName = $att->filename ?? $att->original_filename ?? 'File';
+                    @endphp
+                    <div class="mbx-att-card" style="display:inline-flex; align-items:center; gap:8px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:6px 10px; font-size:12.5px; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+                      <span class="mbx-att-icon" style="font-size:15px; color:#F6740C;">
+                        @if($isImg)
+                          <i class="fa-regular fa-file-image"></i>
+                        @elseif($isPdf)
+                          <i class="fa-regular fa-file-pdf"></i>
+                        @else
+                          <i class="fa-regular fa-file"></i>
+                        @endif
+                      </span>
+                      <span style="display:flex; flex-direction:column; line-height:1.2;">
+                        <strong style="color:#0F172A; max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ $fileName }}">{{ $fileName }}</strong>
+                        <small style="color:#64748B; font-size:11px;">{{ $sizeKb }} KB</small>
+                      </span>
+                      <div style="display:flex; align-items:center; gap:4px; margin-left:6px;">
+                        <button
+                          type="button"
+                          class="mbx-att-btn-preview"
+                          style="background:#EEF4FF; color:#2563EB; border:1px solid #BFDBFE; border-radius:5px; padding:4px 8px; font-size:11.5px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition:background .15s;"
+                          onclick="openMailAttachmentPreview('{{ addslashes($fileName) }}', '{{ $previewUrl }}', '{{ $downloadUrl }}', '{{ $att->mime_type }}', '{{ $sizeKb }} KB')"
+                          title="Preview file"
+                        >
+                          <i class="fa-solid fa-eye" style="font-size:10px;"></i> Preview
+                        </button>
+                        <a
+                          href="{{ $downloadUrl }}"
+                          class="mbx-att-btn-download"
+                          style="background:#F1F5F9; color:#475569; border:1px solid #CBD5E1; border-radius:5px; padding:4px 8px; font-size:11.5px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:4px; transition:background .15s;"
+                          title="Download file"
+                        >
+                          <i class="fa-solid fa-download" style="font-size:10px;"></i> Download
+                        </a>
+                      </div>
+                    </div>
+                  @endforeach
+                </div>
               </div>
             @endif
 
@@ -1411,5 +1453,78 @@
             label.innerText = newSort === 'asc' ? 'Oldest first' : 'Newest first';
         }
     }
+  </script>
+
+  <!-- Attachment Preview Modal -->
+  <div id="b360-att-preview-modal" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(15,23,42,0.78); backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#fff; border-radius:12px; width:100%; max-width:960px; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,0.35);">
+      <header style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid #E2E8F0; background:#F8FAFC;">
+        <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+          <i class="fa-solid fa-paperclip" style="color:#F6740C; font-size:16px;"></i>
+          <div style="min-width:0;">
+            <h3 id="b360-att-modal-title" style="margin:0; font-size:15px; font-weight:700; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Attachment Preview</h3>
+            <span id="b360-att-modal-meta" style="font-size:12px; color:#64748B;"></span>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <a id="b360-att-modal-download-btn" href="#" class="blade-primary-action" style="display:inline-flex; align-items:center; gap:6px; background:#F6740C; color:#fff; text-decoration:none; padding:6px 14px; border-radius:6px; font-size:13px; font-weight:600;">
+            <i class="fa-solid fa-download"></i> Download
+          </a>
+          <button type="button" onclick="closeMailAttachmentPreview()" style="background:transparent; border:none; color:#64748B; font-size:18px; cursor:pointer; padding:4px 8px; border-radius:6px;" title="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </header>
+      <div id="b360-att-modal-body" style="flex:1; overflow:auto; padding:20px; display:flex; align-items:center; justify-content:center; background:#F1F5F9; min-height:300px;">
+        <!-- Preview Content -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openMailAttachmentPreview(fileName, previewUrl, downloadUrl, mimeType, sizeLabel) {
+      var modal = document.getElementById('b360-att-preview-modal');
+      var titleEl = document.getElementById('b360-att-modal-title');
+      var metaEl = document.getElementById('b360-att-modal-meta');
+      var downloadBtn = document.getElementById('b360-att-modal-download-btn');
+      var bodyEl = document.getElementById('b360-att-modal-body');
+
+      if (!modal || !bodyEl) return;
+
+      titleEl.textContent = fileName;
+      metaEl.textContent = sizeLabel + ' · ' + (mimeType || 'File');
+      downloadBtn.href = downloadUrl;
+
+      bodyEl.innerHTML = '<div style="color:#64748B; font-size:14px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading preview…</div>';
+      modal.style.display = 'flex';
+
+      var isImg = mimeType && mimeType.startsWith('image/');
+      var isPdf = mimeType === 'application/pdf';
+      var isTxt = mimeType && (mimeType.startsWith('text/') || mimeType.includes('json') || mimeType.includes('csv'));
+
+      if (isImg) {
+        bodyEl.innerHTML = '<img src="' + previewUrl + '" alt="' + fileName + '" style="max-width:100%; max-height:75vh; border-radius:6px; box-shadow:0 4px 14px rgba(0,0,0,0.15); object-fit:contain;" />';
+      } else if (isPdf) {
+        bodyEl.innerHTML = '<iframe src="' + previewUrl + '" style="width:100%; height:75vh; border:none; border-radius:6px; background:#fff;"></iframe>';
+      } else if (isTxt) {
+        bodyEl.innerHTML = '<iframe src="' + previewUrl + '" style="width:100%; height:70vh; border:none; border-radius:6px; background:#fff;"></iframe>';
+      } else {
+        bodyEl.innerHTML = '<div style="text-align:center; padding:40px 20px; background:#fff; border-radius:10px; max-width:420px; width:100%; box-shadow:0 4px 14px rgba(0,0,0,0.06);">' +
+          '<i class="fa-solid fa-file" style="font-size:48px; color:#F6740C; margin-bottom:12px;"></i>' +
+          '<h4 style="margin:0 0 6px; font-size:15px; color:#0F172A;">' + fileName + '</h4>' +
+          '<p style="margin:0 0 16px; font-size:13px; color:#64748B;">No direct in-browser preview available for this file type (' + (mimeType || 'unknown') + '). Click below to download.</p>' +
+          '<a href="' + downloadUrl + '" style="display:inline-flex; align-items:center; gap:6px; background:#F6740C; color:#fff; text-decoration:none; padding:8px 18px; border-radius:6px; font-size:13px; font-weight:600;"><i class="fa-solid fa-download"></i> Download File</a>' +
+          '</div>';
+      }
+    }
+
+    function closeMailAttachmentPreview() {
+      var modal = document.getElementById('b360-att-preview-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeMailAttachmentPreview();
+    });
   </script>
 @endpush

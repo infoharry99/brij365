@@ -601,6 +601,7 @@ Route::middleware(['auth', 'account.active', 'verified', 'company.active', 'thro
         Route::delete('/accounts/{mailboxAccount}/drafts/{mailboxOutboxMessage}', [MailboxAccountController::class, 'discardDraft'])->name('drafts.destroy');
         Route::patch('/messages/{mailboxEmail}/state', [MailboxAccountController::class, 'state'])->name('external.state');
         Route::get('/attachments/{mailboxAttachment}', [MailboxAccountController::class, 'attachment'])->name('attachments.download');
+        Route::get('/attachments/{mailboxAttachment}/preview', [MailboxAccountController::class, 'previewAttachment'])->name('attachments.preview');
     });
 
     Route::prefix('settings')->name('settings.')->group(function (): void {
