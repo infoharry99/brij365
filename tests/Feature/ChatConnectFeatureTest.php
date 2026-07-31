@@ -484,7 +484,7 @@ class ChatConnectFeatureTest extends TestCase
             $other = ChatConversation::create([
                 'company_id' => $sales->company_id,
                 'owner_user_id' => $sales->id,
-                'conversation_key' => 'CHAT-DEEP-'.str_pad((string) $index, 3, '0', STR_PAD_LEFT),
+                'conversation_key' => 'CHAT-DEEP-'.str_pad((string) $index, 3, '0', STR_PAD_LEFT).'-'.uniqid(),
                 'type' => 'group_chat',
                 'title' => 'Newer conversation '.$index,
                 'visibility' => 'private',

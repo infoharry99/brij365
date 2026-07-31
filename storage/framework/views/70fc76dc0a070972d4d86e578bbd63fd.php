@@ -350,6 +350,12 @@
         color: #9ca3af;
         pointer-events: none;
     }
+    .b360-compose-editor textarea[hidden],
+    .b360-compose-editor textarea[style*="display: none"],
+    .b360-compose-editor textarea[style*="display:none"],
+    .b360-email-editor textarea[hidden] {
+        display: none !important;
+    }
 
     /* ── Attachment zone ────────────────────────────────────────── */
     .b360-compose-attachment-zone {
@@ -669,7 +675,7 @@
                     x-on:input="queueSave"
                 ></div>
                 <input type="hidden" name="body_html" x-ref="bodyHtml">
-                <textarea name="body" hidden x-ref="bodyText"></textarea>
+                <textarea name="body" hidden x-ref="bodyText" style="display: none !important;"></textarea>
             </section>
 
             

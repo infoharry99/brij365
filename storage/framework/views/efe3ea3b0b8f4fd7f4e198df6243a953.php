@@ -67,7 +67,7 @@
             <div style="display:flex; align-items:center; gap:2px;">
                 <?php $__empty_1 = true; $__currentLoopData = $cardAssignees->take(3); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cardAssignee): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                     <span class="tm-card-owner" title="<?php echo e($cardAssignee->name); ?>">
-                        <img href="https://build365.arinine.com/public/TaskOwner.png" alt="Task Owner">
+                        <img src="https://build365.arinine.com/owner.png" alt="Task Owner"style="height: 25px;">
                     </span>
 
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>

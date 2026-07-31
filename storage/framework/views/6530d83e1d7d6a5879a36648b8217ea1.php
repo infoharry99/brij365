@@ -353,6 +353,62 @@
             box-sizing: border-box !important;
             width: 100% !important;
         }
+
+        /* ── Attachment Preview & Selection Chips ── */
+        .b360-chat-attachment-selection {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px 12px 10px;
+            background: var(--surface-soft, #F8FAFC);
+            border-top: 1px dashed var(--border, #E2E8F0);
+        }
+        .b360-chat-selected-file {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 10px 4px 6px;
+            border: 1px solid var(--border-strong, #CBD5E1);
+            border-radius: 8px;
+            background: var(--surface, #FFFFFF);
+            color: var(--text, #0F172A);
+            font-size: 12.5px;
+            font-weight: 600;
+            max-width: 280px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .b360-chat-preview-thumbnail {
+            width: 38px;
+            height: 38px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #CBD5E1;
+            flex-shrink: 0;
+            background: #E2E8F0;
+        }
+        .b360-chat-file-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            min-width: 0;
+        }
+        .b360-chat-selected-file button {
+            border: none;
+            background: transparent;
+            color: #64748B;
+            cursor: pointer;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 13px;
+            display: grid;
+            place-items: center;
+            transition: background .12s, color .12s;
+        }
+        .b360-chat-selected-file button:hover {
+            background: #FEE2E2;
+            color: #EF4444;
+        }
 </style>
 <?php $__env->startSection('content'); ?>
     <section
@@ -611,9 +667,21 @@
                                                             </div>
                                                             <?php if($selectedConversation->type !== 'direct_message'): ?>
                                                                 <?php if((int)$member->user_id === (int)auth()->id() && (int)$selectedConversation->owner_user_id !== (int)auth()->id()): ?>
-                                                                
+                                                                    <form method="POST" action="<?php echo e(route('collaboration.chat.conversations.members.destroy', [$selectedConversation, $member->user])); ?>" onsubmit="return confirm('Leave this <?php echo e(strtolower(str($selectedConversation->type)->headline())); ?>?');">
+                                                                        <?php echo csrf_field(); ?>
+                                                                        <?php echo method_field('DELETE'); ?>
+                                                                        <button type="submit" class="b360-remove-member-btn" style="background: #FEF2F2; color: #EF4444; border: 1px solid #FCA5A5; border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: background .15s;" title="Leave conversation">
+                                                                            <i class="fa-solid fa-right-from-bracket" style="font-size: 10px;" aria-hidden="true"></i> Leave
+                                                                        </button>
+                                                                    </form>
                                                                 <?php elseif((int)$selectedConversation->owner_user_id !== (int)$member->user_id && auth()->user()->can('manageMembers', $selectedConversation)): ?>
-                                                                
+                                                                    <form method="POST" action="<?php echo e(route('collaboration.chat.conversations.members.destroy', [$selectedConversation, $member->user])); ?>" onsubmit="return confirm('Remove <?php echo e(addslashes($member->user->name)); ?> from this <?php echo e(strtolower(str($selectedConversation->type)->headline())); ?>?');">
+                                                                        <?php echo csrf_field(); ?>
+                                                                        <?php echo method_field('DELETE'); ?>
+                                                                        <button type="submit" class="b360-remove-member-btn" style="background: #FEF2F2; color: #EF4444; border: 1px solid #FCA5A5; border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: background .15s;" title="Remove member">
+                                                                            <i class="fa-solid fa-user-minus" style="font-size: 10px;" aria-hidden="true"></i> Remove
+                                                                        </button>
+                                                                    </form>
                                                                 <?php endif; ?>
                                                             <?php endif; ?>
                                                         </div>
@@ -696,14 +764,19 @@
                 <?php if($canPost): ?>
                     <footer class="b360-thread-composer">
                         <div class="b360-composer-stack">
-                            <form method="POST" action="<?php echo e(route('collaboration.chat.conversations.messages.store', $selectedConversation)); ?>" enctype="multipart/form-data" class="b360-composer-box" x-ref="composer" x-on:submit.prevent="sendMessage" onpaste="window.handlePaste ? window.handlePaste(event) : null">
+                            <form method="POST" action="<?php echo e(route('collaboration.chat.conversations.messages.store', $selectedConversation)); ?>" enctype="multipart/form-data" class="b360-composer-box" x-ref="composer" x-on:submit.prevent="sendMessage">
                                 <?php echo csrf_field(); ?>
-                                <textarea name="body" maxlength="10000" placeholder="Write a message…" aria-label="Message" x-on:input="handleComposerInput" x-on:keydown.enter="handleComposerKeydown" onpaste="window.handlePaste ? window.handlePaste(event) : null" x-bind:disabled="busy"></textarea>
-                                <div class="b360-chat-attachment-selection" x-show="hasSelectedAttachments" x-cloak aria-label="Selected attachments">
+                                <textarea name="body" maxlength="10000" placeholder="Write a message…" aria-label="Message" x-on:input="handleComposerInput" x-on:keydown.enter="handleComposerKeydown" x-bind:disabled="busy"></textarea>
+                                <div class="b360-chat-attachment-selection" x-show="selectedAttachments && selectedAttachments.length > 0" x-cloak aria-label="Selected attachments">
                                     <template x-for="attachment in selectedAttachments" x-bind:key="attachment.key">
                                         <span class="b360-chat-selected-file">
-                                            <i class="fa-solid fa-file" aria-hidden="true"></i>
-                                            <span x-text="attachment.name"></span>
+                                            <template x-if="attachment.preview">
+                                                <img x-bind:src="attachment.preview" x-bind:alt="attachment.name" class="b360-chat-preview-thumbnail">
+                                            </template>
+                                            <template x-if="!attachment.preview">
+                                                <i class="fa-solid fa-file" aria-hidden="true"></i>
+                                            </template>
+                                            <span x-text="attachment.name" class="b360-chat-file-name"></span>
                                             <button type="button" x-bind:data-file-key="attachment.key" x-on:click="removeAttachment" aria-label="Remove attachment"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
                                         </span>
                                     </template>
@@ -801,6 +874,208 @@
             <?php endif; ?>
         </section>
     </section>
+    <script>
+        (function() {
+            function updateDOMPreview(composer, files, chat) {
+                if (! composer) return;
+                let container = composer.querySelector('.b360-chat-attachment-selection');
+                if (! container) {
+                    container = document.createElement('div');
+                    container.className = 'b360-chat-attachment-selection';
+                    const tools = composer.querySelector('.b360-composer-tools');
+                    if (tools) {
+                        composer.insertBefore(container, tools);
+                    } else {
+                        composer.appendChild(container);
+                    }
+                }
+
+                container.innerHTML = '';
+                const fileArray = Array.from(files || []);
+
+                if (fileArray.length === 0) {
+                    container.style.display = 'none';
+                    return;
+                }
+
+                container.style.display = 'flex';
+
+                fileArray.forEach(function(file, idx) {
+                    const isImg = file.type ? file.type.startsWith('image/') : /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '');
+                    const span = document.createElement('span');
+                    span.className = 'b360-chat-selected-file';
+
+                    if (isImg && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+                        try {
+                            const img = document.createElement('img');
+                            img.src = URL.createObjectURL(file);
+                            img.alt = file.name || 'Pasted image';
+                            img.className = 'b360-chat-preview-thumbnail';
+                            span.appendChild(img);
+                        } catch (_e) {
+                            const icon = document.createElement('i');
+                            icon.className = 'fa-solid fa-file';
+                            span.appendChild(icon);
+                        }
+                    } else {
+                        const icon = document.createElement('i');
+                        icon.className = 'fa-solid fa-file';
+                        span.appendChild(icon);
+                    }
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'b360-chat-file-name';
+                    nameSpan.textContent = file.name || ('Pasted image ' + (idx + 1));
+                    span.appendChild(nameSpan);
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.type = 'button';
+                    removeBtn.setAttribute('aria-label', 'Remove attachment');
+                    removeBtn.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
+
+                    removeBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const input = composer.querySelector('input[type="file"][name="attachments[]"]');
+                        if (input && typeof DataTransfer !== 'undefined') {
+                            const remainingTransfer = new DataTransfer();
+                            Array.from(input.files || []).forEach(function(f) {
+                                if (f !== file && f.name !== file.name) {
+                                    remainingTransfer.items.add(f);
+                                }
+                            });
+                            input.files = remainingTransfer.files;
+                            if (chat && Array.isArray(chat.selectedAttachments)) {
+                                const removeIdx = chat.selectedAttachments.findIndex(function(a) { return a.name === file.name; });
+                                if (removeIdx >= 0) chat.selectedAttachments.splice(removeIdx, 1);
+                            }
+                            updateDOMPreview(composer, remainingTransfer.files, chat);
+                        }
+                    });
+
+                    span.appendChild(removeBtn);
+                    container.appendChild(span);
+                });
+            }
+
+            window.handlePaste = function(event) {
+                if (! event || event._handlePasteProcessed) return;
+                event._handlePasteProcessed = true;
+
+                const clipboard = event?.clipboardData || window.clipboardData;
+                if (! clipboard) return;
+
+                const files = [];
+
+                // 1. Check clipboard items FIRST (screenshots, canvas, printscreen, browser images)
+                if (clipboard.items && clipboard.items.length > 0) {
+                    Array.from(clipboard.items).forEach(function(item) {
+                        if (item.type && item.type.startsWith('image/')) {
+                            try {
+                                const file = item.getAsFile();
+                                if (file) {
+                                    files.push(file);
+                                }
+                            } catch (_e) {}
+                        }
+                    });
+                }
+
+                // 2. Check direct clipboard files ONLY IF no image items were found in items
+                if (files.length === 0 && clipboard.files && clipboard.files.length > 0) {
+                    Array.from(clipboard.files).forEach(function(file) {
+                        const isImg = file.type ? file.type.startsWith('image/') : /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '');
+                        if (isImg) {
+                            files.push(file);
+                        }
+                    });
+                }
+
+                if (files.length === 0) return;
+
+                if (event && typeof event.preventDefault === 'function') {
+                    event.preventDefault();
+                }
+
+                const target = event.target || event.currentTarget;
+                const composer = target?.closest?.('.b360-composer-box') || document.querySelector('.b360-composer-box');
+                if (! composer) return;
+
+                let input = composer.querySelector('input[type="file"][name="attachments[]"]');
+                if (! input) {
+                    input = document.createElement('input');
+                    input.type = 'file';
+                    input.name = 'attachments[]';
+                    input.multiple = true;
+                    input.hidden = true;
+                    composer.appendChild(input);
+                }
+
+                if (typeof DataTransfer === 'undefined') return;
+
+                const transfer = new DataTransfer();
+                // Note: Replace existing attachments on new image paste or append cleanly
+                Array.from(input.files || []).forEach(function(f) { transfer.items.add(f); });
+
+                let addedCount = 0;
+                files.forEach(function(file, idx) {
+                    const rawExt = file.type ? file.type.split('/')[1] : 'png';
+                    const ext = rawExt ? rawExt.replace('+xml', '').replace('svg', 'png').replace('jpeg', 'jpg') : 'png';
+                    const filename = (file.name && file.name !== 'image.png' && file.name !== 'blob')
+                        ? file.name
+                        : 'pasted-image-' + Date.now() + '-' + (idx + 1) + '.' + ext;
+
+                    const renamedFile = new File([file], filename, { type: file.type || 'image/png' });
+                    transfer.items.add(renamedFile);
+                    addedCount++;
+                });
+
+                if (addedCount > 0) {
+                    input.files = transfer.files;
+                    const chat = window.getChatComponent ? window.getChatComponent() : null;
+
+                    if (chat && Array.isArray(chat.selectedAttachments)) {
+                        const newItems = Array.from(transfer.files).map(function(file, index) {
+                            const isImg = file.type ? file.type.startsWith('image/') : /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '');
+                            return {
+                                file: file,
+                                name: file.name,
+                                size: file.size,
+                                type: file.type,
+                                preview: isImg && typeof URL !== 'undefined' ? URL.createObjectURL(file) : null,
+                                key: file.name + '-' + file.size + '-' + (file.lastModified || Date.now()) + '-' + index,
+                            };
+                        });
+
+                        try {
+                            chat.selectedAttachments.splice(0, chat.selectedAttachments.length);
+                            newItems.forEach(function(item) {
+                                chat.selectedAttachments.push(item);
+                            });
+                        } catch (_e) {}
+                    }
+
+                    updateDOMPreview(composer, transfer.files, chat);
+                }
+            };
+
+            document.addEventListener('paste', function(event) {
+                const target = event.target;
+                if (target && (target.tagName === 'TEXTAREA' || (target.closest && target.closest('.b360-composer-box')))) {
+                    window.handlePaste(event);
+                }
+            });
+
+            document.addEventListener('submit', function(event) {
+                const form = event.target;
+                if (form && form.classList.contains('b360-composer-box')) {
+                    setTimeout(function() {
+                        updateDOMPreview(form, [], window.getChatComponent ? window.getChatComponent() : null);
+                    }, 50);
+                }
+            });
+        })();
+    </script>
 <?php $__env->stopSection(); ?>
 
 <?php echo $__env->make('layouts.builder360-classic', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/developer/public_html/build365/resources/views/collaboration/chat/index.blade.php ENDPATH**/ ?>

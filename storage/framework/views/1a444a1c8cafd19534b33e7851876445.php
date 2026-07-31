@@ -274,35 +274,10 @@
     transition: opacity .2s;
     }
 
-    /* ── Collapsed tooltips ── */
+    /* ── Collapsed navigation layout ── */
     .b360-sidebar.is-collapsed .b360-nav-link {
     justify-content: center;
     padding: 8px;
-    }
-    .b360-sidebar.is-collapsed .b360-nav-link:hover::after {
-    content: attr(data-label);
-    position: fixed;
-    left: calc(var(--sb-w-closed) + 12px);
-    top: 50%; transform: translateY(-50%);
-    background: #1E293B;
-    color: #F1F5F9;
-    font-size: 12px; font-weight: 600;
-    padding: 5px 10px;
-    border-radius: var(--r-sm);
-    white-space: nowrap;
-    pointer-events: none;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,.15);
-    }
-    .b360-sidebar.is-collapsed .b360-nav-link:hover::before {
-    content: '';
-    position: fixed;
-    left: calc(var(--sb-w-closed) + 4px);
-    top: 50%; transform: translateY(-50%);
-    border: 5px solid transparent;
-    border-right-color: #1E293B;
-    pointer-events: none;
-    z-index: 9999;
     }
 
     /* ── Profile section ── */

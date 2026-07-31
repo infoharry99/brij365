@@ -873,7 +873,9 @@ class ChatConnectService
 
     private function nextConversationKey(): string
     {
-        return sprintf('CHAT-%05d', ChatConversation::query()->withTrashed()->count() + 10001);
+        $chatid = 'CHAT' . rand(10000, 99999) .rand(10000, 99999);
+        return $chatid;
+        // return sprintf('CHAT-%05d', ChatConversation::query()->withTrashed()->count() + 10001);
     }
 
     private function directPairKey(int $companyId, int $firstUserId, int $secondUserId): string
