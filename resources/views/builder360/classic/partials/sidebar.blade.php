@@ -1,4 +1,5 @@
 <style>
+    
     /* ── Tokens (scoped, won't leak if already defined in enterprise.css) ── */
     :root {
         --sb-w-open:      260px;
