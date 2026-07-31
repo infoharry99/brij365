@@ -1821,36 +1821,47 @@ Alpine.data('chatRealtime', () => ({
     },
 
     handlePaste(event) {
-        const clipboard = event.clipboardData || window.clipboardData;
+        const clipboard = event?.clipboardData || window.clipboardData;
         if (! clipboard) {
             return;
         }
 
         const files = [];
+        const seenKeys = new Set();
 
-        // 1. Check direct clipboard files (File Explorer, Snipping Tool, Desktop, etc.)
-        if (clipboard.files && clipboard.files.length > 0) {
-            Array.from(clipboard.files).forEach((file) => {
-                const isImg = file.type ? file.type.startsWith('image/') : /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '');
-                if (isImg) {
-                    files.push(file);
+        // 1. Check clipboard items (Screenshots, Snipping tool, Browser copied images, Canvas)
+        if (clipboard.items && clipboard.items.length > 0) {
+            Array.from(clipboard.items).forEach((item) => {
+                if (item.type && item.type.startsWith('image/')) {
+                    try {
+                        const file = item.getAsFile();
+                        if (file) {
+                            const key = `${file.name || 'image'}-${file.size || 0}`;
+                            if (! seenKeys.has(key)) {
+                                files.push(file);
+                                seenKeys.add(key);
+                            }
+                        }
+                    } catch (_e) {}
                 }
             });
         }
 
-        // 2. Check clipboard items (Browser images, Canvas, PrintScreen, Clipboard)
-        if (files.length === 0 && clipboard.items && clipboard.items.length > 0) {
-            Array.from(clipboard.items).forEach((item) => {
-                if (item.type && item.type.startsWith('image/')) {
-                    const file = item.getAsFile();
-                    if (file) {
+        // 2. Check direct clipboard files (File manager copies, Desktop files)
+        if (clipboard.files && clipboard.files.length > 0) {
+            Array.from(clipboard.files).forEach((file) => {
+                const isImg = file.type ? file.type.startsWith('image/') : /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '');
+                if (isImg) {
+                    const key = `${file.name || 'image'}-${file.size || 0}`;
+                    if (! seenKeys.has(key)) {
                         files.push(file);
+                        seenKeys.add(key);
                     }
                 }
             });
         }
 
-        // If no image files are found, allow standard text paste without interruption
+        // If no image files were detected in clipboard, permit standard text paste without interruption
         if (files.length === 0) {
             return;
         }
