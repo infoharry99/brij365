@@ -23,7 +23,7 @@ return [
         ),
         'Content-Security-Policy' => env(
             'SECURITY_HEADER_CSP',
-            "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' ws: wss:; upgrade-insecure-requests",
+            "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob: https://chatsupport.arinine.com https://*.arinine.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://chatsupport.arinine.com https://*.arinine.com; connect-src 'self' ws: wss: https://chatsupport.arinine.com https://*.arinine.com wss://chatsupport.arinine.com wss://*.arinine.com; frame-src 'self' https://chatsupport.arinine.com https://*.arinine.com; upgrade-insecure-requests",
         ),
     ],
 
