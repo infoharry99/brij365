@@ -1508,6 +1508,22 @@ Alpine.data('chatRealtime', () => ({
     mentionMatchCount: 0,
     mentionTriggerStart: null,
     replyTarget: null,
+    typingUsers: [],
+    isTypingSelf: false,
+    typingStopTimer: null,
+    typingDebounceTimer: null,
+
+    get typingIndicatorText() {
+        const names = (this.typingUsers || []).map(u => u.name);
+        if (names.length === 0) return '';
+        if (names.length === 1) return `${names[0]} is typing…`;
+        if (names.length === 2) return `${names[0]} and ${names[1]} are typing…`;
+        return 'Several people are typing…';
+    },
+
+    get hasTypingUsers() {
+        return (this.typingUsers || []).length > 0;
+    },
 
     get hasSelectedAttachments() {
         return this.selectedAttachments.length > 0;
@@ -1549,6 +1565,12 @@ Alpine.data('chatRealtime', () => ({
             }
         });
 
+        window.addEventListener('beforeunload', () => {
+            if (this.isTypingSelf) {
+                this.sendTypingState(false);
+            }
+        });
+
         if (! conversationId) {
             this.connectionState = 'periodic';
             this.startPolling(1000);
@@ -1577,7 +1599,8 @@ Alpine.data('chatRealtime', () => ({
                     .listen('.conversation.read', () => this.handleConversationEvent())
                     .listen('.poll.created', () => this.handleConversationEvent())
                     .listen('.poll.voted', () => this.handleConversationEvent())
-                    .listen('.poll.closed', () => this.handleConversationEvent());
+                    .listen('.poll.closed', () => this.handleConversationEvent())
+                    .listen('.user.typing', (payload) => this.handleTypingEvent(payload));
 
                 this.echo.join(`chat.presence.${conversationId}`)
                     .here((users) => { this.onlineCount = users.length; })
@@ -1683,10 +1706,74 @@ Alpine.data('chatRealtime', () => ({
         return response;
     },
 
+    handleTypingEvent(payload) {
+        if (! payload || ! payload.user_id) return;
+        const currentUserId = Number(this.$root.dataset.userId || 0);
+        if (Number(payload.user_id) === currentUserId) return;
+
+        const userId = Number(payload.user_id);
+        const userName = payload.user_name || 'Someone';
+
+        const existingIndex = this.typingUsers.findIndex((u) => u.id === userId);
+
+        if (payload.is_typing) {
+            if (existingIndex !== -1 && this.typingUsers[existingIndex].timer) {
+                window.clearTimeout(this.typingUsers[existingIndex].timer);
+            }
+
+            const timer = window.setTimeout(() => {
+                this.removeTypingUser(userId);
+            }, 3500);
+
+            if (existingIndex !== -1) {
+                this.typingUsers[existingIndex].timer = timer;
+                this.typingUsers[existingIndex].name = userName;
+            } else {
+                this.typingUsers.push({ id: userId, name: userName, timer });
+            }
+        } else {
+            this.removeTypingUser(userId);
+        }
+    },
+
+    removeTypingUser(userId) {
+        const index = this.typingUsers.findIndex((u) => u.id === userId);
+        if (index !== -1) {
+            if (this.typingUsers[index].timer) {
+                window.clearTimeout(this.typingUsers[index].timer);
+            }
+            this.typingUsers.splice(index, 1);
+        }
+    },
+
+    sendTypingState(isTyping) {
+        const conversationId = Number(this.$root.dataset.conversationId || 0);
+        if (! conversationId || this.isTypingSelf === isTyping) return;
+
+        this.isTypingSelf = isTyping;
+
+        const url = `/collaboration/chat/conversations/${conversationId}/typing`;
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': this.csrfToken(),
+            },
+            body: JSON.stringify({ is_typing: isTyping }),
+        }).catch(() => {
+            this.isTypingSelf = false;
+        });
+    },
+
     async sendMessage(event) {
         if (this.busy) {
             return;
         }
+
+        if (this.typingStopTimer) window.clearTimeout(this.typingStopTimer);
+        if (this.typingDebounceTimer) window.clearTimeout(this.typingDebounceTimer);
+        this.sendTypingState(false);
 
         const form = event.currentTarget;
         this.busy = true;
@@ -1974,6 +2061,23 @@ Alpine.data('chatRealtime', () => ({
 
     handleComposerInput(event) {
         const textarea = event.currentTarget;
+        const textLength = (textarea?.value || '').trim().length;
+
+        if (textLength > 0) {
+            if (this.typingDebounceTimer) window.clearTimeout(this.typingDebounceTimer);
+            this.typingDebounceTimer = window.setTimeout(() => {
+                this.sendTypingState(true);
+            }, 150);
+
+            if (this.typingStopTimer) window.clearTimeout(this.typingStopTimer);
+            this.typingStopTimer = window.setTimeout(() => {
+                this.sendTypingState(false);
+            }, 2500);
+        } else {
+            if (this.typingStopTimer) window.clearTimeout(this.typingStopTimer);
+            this.sendTypingState(false);
+        }
+
         const cursor = textarea.selectionStart ?? textarea.value.length;
         const beforeCursor = textarea.value.slice(0, cursor);
         const match = beforeCursor.match(/(?:^|\s)@([^\s@]*)$/);

@@ -566,6 +566,7 @@ Route::middleware(['auth', 'account.active', 'verified', 'company.active', 'thro
         Route::patch('/chat/messages/{chatMessage}/reactions', [CollaborationController::class, 'updateChatMessageReaction'])->name('chat.messages.reactions.update');
         Route::delete('/chat/messages/{chatMessage}', [CollaborationController::class, 'destroyChatMessage'])->name('chat.messages.destroy');
         Route::patch('/chat/conversations/{chatConversation}/read', [CollaborationController::class, 'markChatConversationRead'])->name('chat.conversations.read');
+        Route::post('/chat/conversations/{chatConversation}/typing', [CollaborationController::class, 'typingChatConversation'])->name('chat.conversations.typing');
         Route::patch('/chat/conversations/{chatConversation}/archive', [CollaborationController::class, 'archiveChatConversation'])->name('chat.conversations.archive');
         Route::patch('/chat/conversations/{chatConversation}', [CollaborationController::class, 'updateChatConversation'])->name('chat.conversations.update');
         Route::post('/chat/conversations/{chatConversation}/members', [CollaborationController::class, 'addChatConversationMembers'])->name('chat.conversations.members.store');

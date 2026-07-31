@@ -7,6 +7,7 @@ use App\Application\Collaboration\Actions\CreateChatConversation;
 use App\Application\Collaboration\Actions\SendChatMessage;
 use App\Application\Collaboration\Actions\ChangeChatMessageReaction;
 use App\Application\Collaboration\Actions\DeleteChatMessage;
+use App\Events\Chat\UserTyping;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ChatConversationResource;
 use App\Http\Resources\ChatMessageResource;
@@ -261,6 +262,32 @@ class ChatApiController extends Controller
             'message'          => 'Conversation marked as read.',
             'updated_messages' => $updated,
             'unread_count'     => 0,
+        ]);
+    }
+
+    /**
+     * POST /api/chat/conversations/{conversation}/typing
+     *
+     * Broadcast user typing status for real-time indicator.
+     */
+    public function typing(Request $request, ChatConversation $conversation): JsonResponse
+    {
+        $this->authorize('view', $conversation);
+
+        /** @var User $user */
+        $user = $request->user();
+        $isTyping = $request->boolean('is_typing', $request->boolean('typing', true));
+
+        broadcast(new UserTyping($conversation, $user, $isTyping))->toOthers();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => $isTyping ? 'Typing event broadcasted.' : 'Stopped typing event broadcasted.',
+            'data'    => [
+                'conversation_id' => $conversation->id,
+                'user_id'         => $user->id,
+                'is_typing'       => $isTyping,
+            ],
         ]);
     }
 

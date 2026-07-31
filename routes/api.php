@@ -45,6 +45,7 @@ Route::middleware(['auth:sanctum', 'account.active'])->group(function (): void {
         Route::post('/conversations', [ChatApiController::class, 'storeConversation'])->name('conversations.store');
         Route::get('/conversations/{conversation}', [ChatApiController::class, 'showConversation'])->name('conversations.show');
         Route::patch('/conversations/{conversation}/read', [ChatApiController::class, 'markRead'])->name('conversations.read');
+        Route::post('/conversations/{conversation}/typing', [ChatApiController::class, 'typing'])->name('conversations.typing');
 
         // Messages
         // Messages & Reactions

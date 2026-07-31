@@ -258,6 +258,39 @@
         border: 2px solid #fff;
         }
 
+        /* Real-time typing indicator */
+        .cc-typing-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px 2px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #F6740C;
+        background: transparent;
+        }
+        .cc-typing-dots {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        }
+        .cc-typing-dots i {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background-color: currentColor;
+        opacity: 0.4;
+        animation: ccTypingBounce 1.4s infinite ease-in-out both;
+        }
+        .cc-typing-dots i:nth-child(1) { animation-delay: 0s; }
+        .cc-typing-dots i:nth-child(2) { animation-delay: 0.2s; }
+        .cc-typing-dots i:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes ccTypingBounce {
+        0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+        40% { transform: scale(1.2); opacity: 1; }
+        }
+
         /* ── Row copy ── */
         .cc-conv-copy { flex: 1; min-width: 0; }
         .cc-conv-name-row {
@@ -633,7 +666,7 @@
                                                                         @csrf
                                                                         @method('DELETE')
                                                                         <button type="submit" class="b360-remove-member-btn" style="background: #FEF2F2; color: #EF4444; border: 1px solid #FCA5A5; border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: background .15s;" title="Leave conversation">
-                                                                            <i class="fa-solid fa-right-from-bracket" style="font-size: 10px;" aria-hidden="true"></i> Leave
+                                                                            <i class="fa-solid fa-right-from-bracket" style="font-size: 10px;" aria-hidden="true"></i> 
                                                                         </button>
                                                                     </form>
                                                                 @elseif((int)$selectedConversation->owner_user_id !== (int)$member->user_id && auth()->user()->can('manageMembers', $selectedConversation))
@@ -641,7 +674,7 @@
                                                                         @csrf
                                                                         @method('DELETE')
                                                                         <button type="submit" class="b360-remove-member-btn" style="background: #FEF2F2; color: #EF4444; border: 1px solid #FCA5A5; border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: background .15s;" title="Remove member">
-                                                                            <i class="fa-solid fa-user-minus" style="font-size: 10px;" aria-hidden="true"></i> Remove
+                                                                            <i class="fa-solid fa-user-minus" style="font-size: 10px;" aria-hidden="true"></i> 
                                                                         </button>
                                                                     </form>
                                                                 @endif
@@ -724,6 +757,10 @@
 
                 @if ($canPost)
                     <footer class="b360-thread-composer">
+                        <div class="cc-typing-bar" x-show="hasTypingUsers" x-cloak style="display: none;">
+                            <span class="cc-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                            <span x-text="typingIndicatorText"></span>
+                        </div>
                         <div class="b360-composer-stack">
                             <form method="POST" action="{{ route('collaboration.chat.conversations.messages.store', $selectedConversation) }}" enctype="multipart/form-data" class="b360-composer-box" x-ref="composer" x-on:submit.prevent="sendMessage">
                                 @csrf
