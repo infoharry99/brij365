@@ -1467,7 +1467,7 @@
           </div>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
-          <a id="b360-att-modal-download-btn" href="#" class="blade-primary-action" style="display:inline-flex; align-items:center; gap:6px; background:#F6740C; color:#fff; text-decoration:none; padding:6px 14px; border-radius:6px; font-size:13px; font-weight:600;">
+          <a id="b360-att-modal-download-btn" href="#" class="blade-primary-action" style="display:none !important; align-items:center; gap:6px; background:#F6740C; color:#fff; text-decoration:none; padding:6px 14px; border-radius:6px; font-size:13px; font-weight:600;">
             <i class="fa-solid fa-download"></i> Download
           </a>
           <button type="button" onclick="closeMailAttachmentPreview()" style="background:transparent; border:none; color:#64748B; font-size:18px; cursor:pointer; padding:4px 8px; border-radius:6px;" title="Close">
