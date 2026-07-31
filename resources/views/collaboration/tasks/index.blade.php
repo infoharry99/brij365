@@ -465,7 +465,7 @@
   /* Owner avatar */
   .tm-card-owner {
     width: 28px; height: 28px; border-radius: 8px;
-    background: linear-gradient(135deg, #4F46E5, #818cf8);
+    /* background: linear-gradient(135deg, #4F46E5, #818cf8); */
     color: #fff; font-size: 11px; font-weight: 700;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; letter-spacing: .02em;
