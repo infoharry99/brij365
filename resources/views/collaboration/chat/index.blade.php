@@ -258,39 +258,6 @@
         border: 2px solid #fff;
         }
 
-        /* Real-time typing indicator */
-        .cc-typing-bar {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 14px 2px;
-        font-size: 12px;
-        font-weight: 600;
-        color: #F6740C;
-        background: transparent;
-        }
-        .cc-typing-dots {
-        display: inline-flex;
-        align-items: center;
-        gap: 3px;
-        }
-        .cc-typing-dots i {
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background-color: currentColor;
-        opacity: 0.4;
-        animation: ccTypingBounce 1.4s infinite ease-in-out both;
-        }
-        .cc-typing-dots i:nth-child(1) { animation-delay: 0s; }
-        .cc-typing-dots i:nth-child(2) { animation-delay: 0.2s; }
-        .cc-typing-dots i:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes ccTypingBounce {
-        0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
-        40% { transform: scale(1.2); opacity: 1; }
-        }
-
         /* ── Row copy ── */
         .cc-conv-copy { flex: 1; min-width: 0; }
         .cc-conv-name-row {
@@ -445,105 +412,6 @@
             color: #EF4444;
         }
 </style>
-
-<script>
-    document.addEventListener('alpine:init', function () {
-        if (!window.Alpine) return;
-
-        const originalFactory = window.Alpine.data('chatRealtime');
-
-        window.Alpine.data('chatRealtime', function () {
-            const base = typeof originalFactory === 'function' ? originalFactory() : (originalFactory || {});
-
-            return Object.assign(base, {
-                typingUsers: [],
-                isTypingSelf: false,
-                typingStopTimer: null,
-                typingDebounceTimer: null,
-                typingIndicatorText: '',
-                hasTypingUsers: false,
-
-                updateTypingSummary() {
-                    const names = (this.typingUsers || []).map(function(u) { return u.name; });
-                    this.hasTypingUsers = names.length > 0;
-                    if (names.length === 0) {
-                        this.typingIndicatorText = '';
-                    } else if (names.length === 1) {
-                        this.typingIndicatorText = names[0] + ' is typing…';
-                    } else if (names.length === 2) {
-                        this.typingIndicatorText = names[0] + ' and ' + names[1] + ' are typing…';
-                    } else {
-                        this.typingIndicatorText = 'Several people are typing…';
-                    }
-                },
-
-                handleTypingEvent(payload) {
-                    if (!payload || !payload.user_id) return;
-                    const currentUserId = Number(this.$root ? this.$root.dataset.userId : 0);
-                    if (Number(payload.user_id) === currentUserId) return;
-
-                    const userId = Number(payload.user_id);
-                    const userName = payload.user_name || 'Someone';
-                    const existingIndex = this.typingUsers.findIndex(function(u) { return u.id === userId; });
-
-                    if (payload.is_typing) {
-                        if (existingIndex !== -1 && this.typingUsers[existingIndex].timer) {
-                            window.clearTimeout(this.typingUsers[existingIndex].timer);
-                        }
-                        const self = this;
-                        const timer = window.setTimeout(function() {
-                            self.removeTypingUser(userId);
-                        }, 3500);
-
-                        if (existingIndex !== -1) {
-                            this.typingUsers[existingIndex].timer = timer;
-                            this.typingUsers[existingIndex].name = userName;
-                        } else {
-                            this.typingUsers.push({ id: userId, name: userName, timer: timer });
-                        }
-                    } else {
-                        this.removeTypingUser(userId);
-                    }
-                    this.updateTypingSummary();
-                },
-
-                removeTypingUser(userId) {
-                    const index = this.typingUsers.findIndex(function(u) { return u.id === userId; });
-                    if (index !== -1) {
-                        if (this.typingUsers[index].timer) {
-                            window.clearTimeout(this.typingUsers[index].timer);
-                        }
-                        this.typingUsers.splice(index, 1);
-                    }
-                    this.updateTypingSummary();
-                },
-
-                sendTypingState(isTyping) {
-                    const conversationId = Number(this.$root ? this.$root.dataset.conversationId : 0);
-                    if (!conversationId || this.isTypingSelf === isTyping) return;
-
-                    this.isTypingSelf = isTyping;
-                    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-                    const url = '/collaboration/chat/conversations/' + conversationId + '/typing';
-                    const self = this;
-
-                    fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': csrf,
-                        },
-                        body: JSON.stringify({ is_typing: isTyping }),
-                    }).catch(function() {
-                        self.isTypingSelf = false;
-                    });
-                }
-            });
-        });
-    });
-</script>
-
 @section('content')
     <section
         class="b360-collaboration-screen b360-chat-screen {{ $selectedConversation ? 'has-conversation' : 'no-conversation' }}"
@@ -765,7 +633,7 @@
                                                                         @csrf
                                                                         @method('DELETE')
                                                                         <button type="submit" class="b360-remove-member-btn" style="background: #FEF2F2; color: #EF4444; border: 1px solid #FCA5A5; border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: background .15s;" title="Leave conversation">
-                                                                            <i class="fa-solid fa-right-from-bracket" style="font-size: 10px;" aria-hidden="true"></i> 
+                                                                            <i class="fa-solid fa-right-from-bracket" style="font-size: 10px;" aria-hidden="true"></i> Leave
                                                                         </button>
                                                                     </form>
                                                                 @elseif((int)$selectedConversation->owner_user_id !== (int)$member->user_id && auth()->user()->can('manageMembers', $selectedConversation))
@@ -773,7 +641,7 @@
                                                                         @csrf
                                                                         @method('DELETE')
                                                                         <button type="submit" class="b360-remove-member-btn" style="background: #FEF2F2; color: #EF4444; border: 1px solid #FCA5A5; border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: background .15s;" title="Remove member">
-                                                                            <i class="fa-solid fa-user-minus" style="font-size: 10px;" aria-hidden="true"></i> 
+                                                                            <i class="fa-solid fa-user-minus" style="font-size: 10px;" aria-hidden="true"></i> Remove
                                                                         </button>
                                                                     </form>
                                                                 @endif
@@ -856,10 +724,6 @@
 
                 @if ($canPost)
                     <footer class="b360-thread-composer">
-                        <div class="cc-typing-bar" x-show="hasTypingUsers" x-cloak style="display: none;">
-                            <span class="cc-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-                            <span x-text="typingIndicatorText"></span>
-                        </div>
                         <div class="b360-composer-stack">
                             <form method="POST" action="{{ route('collaboration.chat.conversations.messages.store', $selectedConversation) }}" enctype="multipart/form-data" class="b360-composer-box" x-ref="composer" x-on:submit.prevent="sendMessage">
                                 @csrf

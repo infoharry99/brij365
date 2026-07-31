@@ -379,27 +379,6 @@ class CollaborationController extends Controller
         ]);
     }
 
-    public function typingChatConversation(Request $request, ChatConversation $chatConversation): JsonResponse
-    {
-        $this->authorize('view', $chatConversation);
-
-        /** @var User $user */
-        $user = $request->user();
-        $isTyping = $request->boolean('is_typing', $request->boolean('typing', true));
-
-        broadcast(new UserTyping($chatConversation, $user, $isTyping))->toOthers();
-
-        return response()->json([
-            'status' => 'success',
-            'message' => $isTyping ? 'Typing event broadcasted.' : 'Stopped typing event broadcasted.',
-            'data' => [
-                'conversation_id' => $chatConversation->id,
-                'user_id' => $user->id,
-                'is_typing' => $isTyping,
-            ],
-        ]);
-    }
-
     public function archiveChatConversation(ArchiveChatConversationRequest $request, ChatConversation $chatConversation, ArchiveChatConversation $action): JsonResponse|RedirectResponse
     {
         $membership = $action->execute($chatConversation, $this->chatCommand($request));
