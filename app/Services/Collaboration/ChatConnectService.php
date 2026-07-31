@@ -328,8 +328,8 @@ class ChatConnectService
             event(new ChatMessageSent($message));
 
             // Sync chat reply back to task comment if linked to a task
-            $taskId = $message->metadata['task_id'] ?? $parent?->metadata['task_id'] ?? null;
-            if ($taskId && empty($message->metadata['synced_from_task']) && filled($message->body)) {
+            $taskId = data_get($message->metadata, 'task_id') ?? data_get($parent?->metadata, 'task_id');
+            if ($taskId && empty(data_get($message->metadata, 'synced_from_task')) && filled($message->body)) {
                 try {
                     $task = \App\Models\WorkTask::query()->find($taskId);
                     if ($task) {

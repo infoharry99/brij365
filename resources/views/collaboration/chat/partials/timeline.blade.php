@@ -53,9 +53,12 @@
 
                 @php
                     $taskMeta = $message->metadata ?? [];
-                    $taskNumber = $taskMeta['task_number'] ?? null;
-                    $taskTitle = $taskMeta['task_title'] ?? null;
-                    $actionUrl = $taskMeta['action_url'] ?? ($taskMeta['task_id'] ? "/collaboration/tasks?task_id={$taskMeta['task_id']}&tab=comments" : null);
+                    $taskNumber = data_get($taskMeta, 'task_number');
+                    $taskTitle = data_get($taskMeta, 'task_title');
+                    $actionUrl = data_get($taskMeta, 'action_url');
+                    if (! $actionUrl && data_get($taskMeta, 'task_id')) {
+                        $actionUrl = '/collaboration/tasks?task_id='.data_get($taskMeta, 'task_id').'&tab=comments';
+                    }
                 @endphp
                 @if ($taskNumber || $actionUrl)
                     <div class="b360-chat-task-card" style="margin-top: 6px; padding: 8px 12px; background: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 8px; font-size: 12.5px; display: flex; align-items: center; justify-content: space-between; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
