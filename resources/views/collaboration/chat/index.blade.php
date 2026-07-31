@@ -355,6 +355,62 @@
             box-sizing: border-box !important;
             width: 100% !important;
         }
+
+        /* ── Attachment Preview & Selection Chips ── */
+        .b360-chat-attachment-selection {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px 12px 10px;
+            background: var(--surface-soft, #F8FAFC);
+            border-top: 1px dashed var(--border, #E2E8F0);
+        }
+        .b360-chat-selected-file {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 10px 4px 6px;
+            border: 1px solid var(--border-strong, #CBD5E1);
+            border-radius: 8px;
+            background: var(--surface, #FFFFFF);
+            color: var(--text, #0F172A);
+            font-size: 12.5px;
+            font-weight: 600;
+            max-width: 280px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .b360-chat-preview-thumbnail {
+            width: 38px;
+            height: 38px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #CBD5E1;
+            flex-shrink: 0;
+            background: #E2E8F0;
+        }
+        .b360-chat-file-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            min-width: 0;
+        }
+        .b360-chat-selected-file button {
+            border: none;
+            background: transparent;
+            color: #64748B;
+            cursor: pointer;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 13px;
+            display: grid;
+            place-items: center;
+            transition: background .12s, color .12s;
+        }
+        .b360-chat-selected-file button:hover {
+            background: #FEE2E2;
+            color: #EF4444;
+        }
 </style>
 @section('content')
     <section
@@ -663,8 +719,13 @@
                                 <div class="b360-chat-attachment-selection" x-show="hasSelectedAttachments" x-cloak aria-label="Selected attachments">
                                     <template x-for="attachment in selectedAttachments" x-bind:key="attachment.key">
                                         <span class="b360-chat-selected-file">
-                                            <i class="fa-solid fa-file" aria-hidden="true"></i>
-                                            <span x-text="attachment.name"></span>
+                                            <template x-if="attachment.preview">
+                                                <img x-bind:src="attachment.preview" x-bind:alt="attachment.name" class="b360-chat-preview-thumbnail">
+                                            </template>
+                                            <template x-if="!attachment.preview">
+                                                <i class="fa-solid fa-file" aria-hidden="true"></i>
+                                            </template>
+                                            <span x-text="attachment.name" class="b360-chat-file-name"></span>
                                             <button type="button" x-bind:data-file-key="attachment.key" x-on:click="removeAttachment" aria-label="Remove attachment"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
                                         </span>
                                     </template>

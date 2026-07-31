@@ -1689,7 +1689,12 @@ Alpine.data('chatRealtime', () => ({
                 body: new FormData(form),
             });
             form.reset();
+            this.clearAttachmentPreviews();
             this.selectedAttachments = [];
+            const fileInput = form.querySelector('input[type="file"][name="attachments[]"]');
+            if (fileInput) {
+                fileInput.value = '';
+            }
             this.cancelReply();
             form.querySelectorAll('details[open]').forEach((details) => details.removeAttribute('open'));
             this.statusMessage = '';
@@ -1779,6 +1784,42 @@ Alpine.data('chatRealtime', () => ({
         this.$refs.composer?.querySelector('textarea[name="body"]')?.focus();
     },
 
+    clearAttachmentPreviews() {
+        if (Array.isArray(this.selectedAttachments)) {
+            this.selectedAttachments.forEach((att) => {
+                if (att && att.preview && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+                    try {
+                        URL.revokeObjectURL(att.preview);
+                    } catch (_e) {}
+                }
+            });
+        }
+    },
+
+    syncSelectedAttachments(filesList) {
+        this.clearAttachmentPreviews();
+        const filesArray = Array.from(filesList || []);
+        this.selectedAttachments = filesArray.map((file, index) => {
+            const isImage = file.type ? file.type.startsWith('image/') : /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '');
+            let preview = null;
+            if (isImage && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+                try {
+                    preview = URL.createObjectURL(file);
+                } catch (_e) {
+                    preview = null;
+                }
+            }
+            return {
+                file,
+                name: file.name || `file-${index + 1}`,
+                size: file.size || 0,
+                type: file.type || '',
+                preview,
+                key: `${file.name || 'file'}-${file.size || 0}-${file.lastModified || Date.now()}-${index}`,
+            };
+        });
+    },
+
     handlePaste(event) {
         const clipboard = event.clipboardData || window.clipboardData;
         if (! clipboard) {
@@ -1790,7 +1831,8 @@ Alpine.data('chatRealtime', () => ({
         // 1. Check direct clipboard files (File Explorer, Snipping Tool, Desktop, etc.)
         if (clipboard.files && clipboard.files.length > 0) {
             Array.from(clipboard.files).forEach((file) => {
-                if (file.type && file.type.startsWith('image/')) {
+                const isImg = file.type ? file.type.startsWith('image/') : /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '');
+                if (isImg) {
                     files.push(file);
                 }
             });
@@ -1808,8 +1850,13 @@ Alpine.data('chatRealtime', () => ({
             });
         }
 
+        // If no image files are found, allow standard text paste without interruption
         if (files.length === 0) {
             return;
+        }
+
+        if (event && typeof event.preventDefault === 'function') {
+            event.preventDefault();
         }
 
         if (typeof DataTransfer === 'undefined') {
@@ -1828,13 +1875,13 @@ Alpine.data('chatRealtime', () => ({
         }
 
         const transfer = new DataTransfer();
-        // Preserve any existing attachments
+        // Preserve existing attachments
         Array.from(input.files || []).forEach((f) => transfer.items.add(f));
 
         let addedCount = 0;
         files.forEach((file, idx) => {
             const rawExt = file.type ? file.type.split('/')[1] : 'png';
-            const ext = rawExt ? rawExt.replace('+xml', '').replace('svg', 'png') : 'png';
+            const ext = rawExt ? rawExt.replace('+xml', '').replace('svg', 'png').replace('jpeg', 'jpg') : 'png';
             const filename = (file.name && file.name !== 'image.png' && file.name !== 'blob')
                 ? file.name
                 : `pasted-image-${Date.now()}-${idx + 1}.${ext}`;
@@ -1846,22 +1893,13 @@ Alpine.data('chatRealtime', () => ({
 
         if (addedCount > 0) {
             input.files = transfer.files;
-            this.selectedAttachments = Array.from(transfer.files).map((file, index) => ({
-                file,
-                name: file.name,
-                size: file.size,
-                key: `${file.name}-${file.size}-${file.lastModified}-${index}`,
-            }));
+            this.syncSelectedAttachments(transfer.files);
         }
     },
 
     selectAttachments(event) {
-        this.selectedAttachments = Array.from(event.currentTarget.files || []).map((file, index) => ({
-            file,
-            name: file.name,
-            size: file.size,
-            key: `${file.name}-${file.size}-${file.lastModified}-${index}`,
-        }));
+        const files = event.currentTarget.files;
+        this.syncSelectedAttachments(files);
     },
 
     removeAttachment(event) {
@@ -1869,14 +1907,26 @@ Alpine.data('chatRealtime', () => ({
         const index = this.selectedAttachments.findIndex((attachment) => attachment.key === fileKey);
         const input = this.$refs.composer?.querySelector('input[type="file"][name="attachments[]"]');
 
-        if (! input || index < 0) {
+        if (index < 0) {
             return;
+        }
+
+        const removed = this.selectedAttachments[index];
+        if (removed && removed.preview && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+            try {
+                URL.revokeObjectURL(removed.preview);
+            } catch (_e) {}
         }
 
         this.selectedAttachments.splice(index, 1);
 
+        if (! input) {
+            return;
+        }
+
         if (typeof DataTransfer === 'undefined') {
             input.value = '';
+            this.clearAttachmentPreviews();
             this.selectedAttachments = [];
             return;
         }

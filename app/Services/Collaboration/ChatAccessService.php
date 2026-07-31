@@ -70,7 +70,7 @@ class ChatAccessService
      * @return array<string, array<string, bool>>
      */
     
-    private function defaultRoleAccess(): array
+    public function defaultRoleAccess(): array
     {
         $fullAccess = [
             'can_view'            => true,
