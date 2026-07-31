@@ -68,7 +68,7 @@
             <div style="display:flex; align-items:center; gap:2px;">
                 @forelse($cardAssignees->take(3) as $cardAssignee)
                     <span class="tm-card-owner" title="{{ $cardAssignee->name }}">
-                        <img href="https://build365.arinine.com/public/TaskOwner.png" alt="Task Owner">
+                        <img href="https://build365.arinine.com/owner.png" alt="Task Owner">
                     </span>
 
                 @empty
