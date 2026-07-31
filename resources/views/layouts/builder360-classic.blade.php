@@ -44,6 +44,12 @@
             const SIDEBAR_KEY = 'b360_sidebar_collapsed';
 
             window.toggleSidebar = function() {
+                const shell = window.Alpine && document.body ? window.Alpine.$data(document.body) : null;
+                if (shell && typeof shell.toggleSidebar === 'function') {
+                    shell.toggleSidebar();
+                    return;
+                }
+
                 if (window.innerWidth <= 768) {
                     document.body.classList.toggle('nav-open');
                     return;
@@ -56,11 +62,6 @@
                 try {
                     localStorage.setItem(SIDEBAR_KEY, isCollapsed ? '1' : '0');
                 } catch(e) {}
-
-                const shell = window.Alpine && document.body ? window.Alpine.$data(document.body) : null;
-                if (shell) {
-                    shell.sidebarCollapsed = isCollapsed;
-                }
             };
 
             function applyInitialSidebarState() {

@@ -595,7 +595,6 @@
       class="b360-menu-toggle b360-icon-btn"
       type="button"
       x-ref="menuToggle"
-      onclick="window.toggleSidebar ? window.toggleSidebar() : null"
       x-on:click="handleMenuToggle"
       aria-controls="b360Sidebar"
       x-bind:aria-expanded="navigationExpanded"

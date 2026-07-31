@@ -151,6 +151,15 @@ Alpine.data('builderShell', () => ({
 
         this.sidebarCollapsed = ! this.sidebarCollapsed;
         this.storageSet(BUILDER_SIDEBAR_KEY, this.sidebarCollapsed ? '1' : '0');
+
+        const sidebar = document.getElementById('b360Sidebar') || document.querySelector('.b360-sidebar');
+        if (this.sidebarCollapsed) {
+            document.body.classList.add('sidebar-collapsed');
+            if (sidebar) sidebar.classList.add('is-collapsed');
+        } else {
+            document.body.classList.remove('sidebar-collapsed');
+            if (sidebar) sidebar.classList.remove('is-collapsed');
+        }
     },
 
     handleEscape() {
