@@ -110,6 +110,7 @@
         color: #F6740C;
         text-decoration: none;
         }
+        .b360-composer-send { margin-right: 60px !important; }
         .cc-rail-tab.is-active {
         background: #EEF4FF;
         border-color: #BFDBFE;
