@@ -67,7 +67,7 @@
             @endphp
             <div style="display:flex; align-items:center; gap:2px;">
                 @forelse($cardAssignees->take(3) as $cardAssignee)
-                    <span>{{ $cardAssignee->name }}</span>
+                    <!-- <span>{{ $cardAssignee->name }}</span> -->
                     <span class="tm-card-owner" title="{{ $cardAssignee->name }}">
                         <img src="https://build365.arinine.com/owner.png" alt="Task Owner"style="height: 25px;">
                     </span>
