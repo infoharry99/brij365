@@ -68,7 +68,7 @@
             <div style="display:flex; align-items:center; gap:2px;">
                 @forelse($cardAssignees->take(3) as $cardAssignee)
                     <span class="tm-card-owner" title="{{ $cardAssignee->name }}">
-                        <img href="TaskOwner.png" alt="Task Owner">
+                        <img href="\TaskOwner.png" alt="Task Owner">
                     </span>
 
                 @empty
