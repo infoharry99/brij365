@@ -445,10 +445,109 @@
             color: #EF4444;
         }
 </style>
+
+<script>
+    document.addEventListener('alpine:init', function () {
+        if (!window.Alpine) return;
+
+        const originalFactory = window.Alpine.data('chatRealtime');
+
+        window.Alpine.data('chatRealtime', function () {
+            const base = typeof originalFactory === 'function' ? originalFactory() : (originalFactory || {});
+
+            return Object.assign(base, {
+                typingUsers: [],
+                isTypingSelf: false,
+                typingStopTimer: null,
+                typingDebounceTimer: null,
+                typingIndicatorText: '',
+                hasTypingUsers: false,
+
+                updateTypingSummary() {
+                    const names = (this.typingUsers || []).map(function(u) { return u.name; });
+                    this.hasTypingUsers = names.length > 0;
+                    if (names.length === 0) {
+                        this.typingIndicatorText = '';
+                    } else if (names.length === 1) {
+                        this.typingIndicatorText = names[0] + ' is typing…';
+                    } else if (names.length === 2) {
+                        this.typingIndicatorText = names[0] + ' and ' + names[1] + ' are typing…';
+                    } else {
+                        this.typingIndicatorText = 'Several people are typing…';
+                    }
+                },
+
+                handleTypingEvent(payload) {
+                    if (!payload || !payload.user_id) return;
+                    const currentUserId = Number(this.$root ? this.$root.dataset.userId : 0);
+                    if (Number(payload.user_id) === currentUserId) return;
+
+                    const userId = Number(payload.user_id);
+                    const userName = payload.user_name || 'Someone';
+                    const existingIndex = this.typingUsers.findIndex(function(u) { return u.id === userId; });
+
+                    if (payload.is_typing) {
+                        if (existingIndex !== -1 && this.typingUsers[existingIndex].timer) {
+                            window.clearTimeout(this.typingUsers[existingIndex].timer);
+                        }
+                        const self = this;
+                        const timer = window.setTimeout(function() {
+                            self.removeTypingUser(userId);
+                        }, 3500);
+
+                        if (existingIndex !== -1) {
+                            this.typingUsers[existingIndex].timer = timer;
+                            this.typingUsers[existingIndex].name = userName;
+                        } else {
+                            this.typingUsers.push({ id: userId, name: userName, timer: timer });
+                        }
+                    } else {
+                        this.removeTypingUser(userId);
+                    }
+                    this.updateTypingSummary();
+                },
+
+                removeTypingUser(userId) {
+                    const index = this.typingUsers.findIndex(function(u) { return u.id === userId; });
+                    if (index !== -1) {
+                        if (this.typingUsers[index].timer) {
+                            window.clearTimeout(this.typingUsers[index].timer);
+                        }
+                        this.typingUsers.splice(index, 1);
+                    }
+                    this.updateTypingSummary();
+                },
+
+                sendTypingState(isTyping) {
+                    const conversationId = Number(this.$root ? this.$root.dataset.conversationId : 0);
+                    if (!conversationId || this.isTypingSelf === isTyping) return;
+
+                    this.isTypingSelf = isTyping;
+                    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                    const url = '/collaboration/chat/conversations/' + conversationId + '/typing';
+                    const self = this;
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrf,
+                        },
+                        body: JSON.stringify({ is_typing: isTyping }),
+                    }).catch(function() {
+                        self.isTypingSelf = false;
+                    });
+                }
+            });
+        });
+    });
+</script>
+
 @section('content')
     <section
         class="b360-collaboration-screen b360-chat-screen {{ $selectedConversation ? 'has-conversation' : 'no-conversation' }}"
-        x-data="{ ...chatRealtime(), typingUsers: [], isTypingSelf: false, typingIndicatorText: '', hasTypingUsers: false }"
+        x-data="chatRealtime"
         data-conversation-id="{{ $selectedConversation?->id ?? '' }}"
         data-message-count="{{ $chatMessages->count() }}"
         data-latest-message-id="{{ $chatMessages->last()?->id ?? '' }}"
@@ -1053,139 +1152,6 @@
                     }, 50);
                 }
             });
-
-            // Guarantee typing indicator properties and methods exist on Alpine chatRealtime component
-            (function patchChatRealtime() {
-                function applyPatch(component) {
-                    if (!component) return;
-
-                    if (typeof component.hasTypingUsers === 'undefined') {
-                        component.hasTypingUsers = false;
-                    }
-                    if (typeof component.typingIndicatorText === 'undefined') {
-                        component.typingIndicatorText = '';
-                    }
-                    if (!Array.isArray(component.typingUsers)) {
-                        component.typingUsers = [];
-                    }
-                    if (typeof component.isTypingSelf === 'undefined') {
-                        component.isTypingSelf = false;
-                    }
-
-                    if (!component.updateTypingSummary) {
-                        component.updateTypingSummary = function() {
-                            const names = (this.typingUsers || []).map(function(u) { return u.name; });
-                            this.hasTypingUsers = names.length > 0;
-                            if (names.length === 0) {
-                                this.typingIndicatorText = '';
-                            } else if (names.length === 1) {
-                                this.typingIndicatorText = names[0] + ' is typing…';
-                            } else if (names.length === 2) {
-                                this.typingIndicatorText = names[0] + ' and ' + names[1] + ' are typing…';
-                            } else {
-                                this.typingIndicatorText = 'Several people are typing…';
-                            }
-                        };
-                    }
-
-                    if (!component.removeTypingUser) {
-                        component.removeTypingUser = function(userId) {
-                            const index = this.typingUsers.findIndex(function(u) { return u.id === userId; });
-                            if (index !== -1) {
-                                if (this.typingUsers[index].timer) {
-                                    window.clearTimeout(this.typingUsers[index].timer);
-                                }
-                                this.typingUsers.splice(index, 1);
-                            }
-                            this.updateTypingSummary();
-                        };
-                    }
-
-                    if (!component.handleTypingEvent) {
-                        component.handleTypingEvent = function(payload) {
-                            if (!payload || !payload.user_id) return;
-                            const currentUserId = Number(this.$root ? this.$root.dataset.userId : 0);
-                            if (Number(payload.user_id) === currentUserId) return;
-
-                            const userId = Number(payload.user_id);
-                            const userName = payload.user_name || 'Someone';
-                            const existingIndex = this.typingUsers.findIndex(function(u) { return u.id === userId; });
-
-                            if (payload.is_typing) {
-                                if (existingIndex !== -1 && this.typingUsers[existingIndex].timer) {
-                                    window.clearTimeout(this.typingUsers[existingIndex].timer);
-                                }
-                                const self = this;
-                                const timer = window.setTimeout(function() {
-                                    self.removeTypingUser(userId);
-                                }, 3500);
-
-                                if (existingIndex !== -1) {
-                                    this.typingUsers[existingIndex].timer = timer;
-                                    this.typingUsers[existingIndex].name = userName;
-                                } else {
-                                    this.typingUsers.push({ id: userId, name: userName, timer: timer });
-                                }
-                            } else {
-                                this.removeTypingUser(userId);
-                            }
-                            this.updateTypingSummary();
-                        };
-                    }
-
-                    if (!component.sendTypingState) {
-                        component.sendTypingState = function(isTyping) {
-                            const conversationId = Number(this.$root ? this.$root.dataset.conversationId : 0);
-                            if (!conversationId || this.isTypingSelf === isTyping) return;
-
-                            this.isTypingSelf = isTyping;
-                            const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-                            const url = '/collaboration/chat/conversations/' + conversationId + '/typing';
-                            const self = this;
-
-                            fetch(url, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json',
-                                    'X-CSRF-TOKEN': csrf,
-                                },
-                                body: JSON.stringify({ is_typing: isTyping }),
-                            }).catch(function() {
-                                self.isTypingSelf = false;
-                            });
-                        };
-                    }
-
-                    if (component.echo && !component._typingListenerAttached) {
-                        const conversationId = Number(component.$root ? component.$root.dataset.conversationId : 0);
-                        if (conversationId) {
-                            try {
-                                component.echo.private('chat.conversation.' + conversationId)
-                                    .listen('.user.typing', function(payload) { component.handleTypingEvent(payload); });
-                                component._typingListenerAttached = true;
-                            } catch (_e) {}
-                        }
-                    }
-                }
-
-                function initPatch() {
-                    const screen = document.querySelector('.b360-chat-screen[x-data]');
-                    if (screen && window.Alpine) {
-                        try {
-                            const data = window.Alpine.$data(screen);
-                            if (data) applyPatch(data);
-                        } catch (_e) {}
-                    }
-                }
-
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', function() { setTimeout(initPatch, 100); });
-                } else {
-                    setTimeout(initPatch, 100);
-                }
-                document.addEventListener('alpine:initialized', initPatch);
-            })();
         })();
     </script>
 @endsection
