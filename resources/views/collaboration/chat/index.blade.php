@@ -448,7 +448,7 @@
 @section('content')
     <section
         class="b360-collaboration-screen b360-chat-screen {{ $selectedConversation ? 'has-conversation' : 'no-conversation' }}"
-        x-data="chatRealtime"
+        x-data="{ ...chatRealtime(), typingUsers: [], isTypingSelf: false, typingIndicatorText: '', hasTypingUsers: false }"
         data-conversation-id="{{ $selectedConversation?->id ?? '' }}"
         data-message-count="{{ $chatMessages->count() }}"
         data-latest-message-id="{{ $chatMessages->last()?->id ?? '' }}"
