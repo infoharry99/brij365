@@ -16,11 +16,24 @@ class AddChatConversationMembersRequest extends FormRequest
     {
         $conversation = $this->route('chatConversation');
 
+        if (is_numeric($conversation) || is_string($conversation)) {
+            $conversation = ChatConversation::query()->find($conversation);
+        }
+
         if (! $conversation instanceof ChatConversation || $conversation->type === 'direct_message') {
             return false;
         }
 
-        return $this->user()?->can('manageMembers', $conversation) ?? false;
+        $actor = $this->user();
+        if (! $actor) {
+            return false;
+        }
+
+        $isOwner = (int) $conversation->owner_user_id === (int) $actor->id;
+        $canManage = $actor->can('manageMembers', $conversation);
+        $hasGlobalAccess = app(ChatAccessService::class)->can($actor, 'can_manage_members') || $actor->hasPermission('*');
+
+        return $isOwner || $canManage || $hasGlobalAccess;
     }
 
     public function rules(): array

@@ -52,6 +52,7 @@ class ChatConversationPolicy
         return $this->view($user, $conversation)
             && (
                 $user->hasPermission('*')
+                || (int) $conversation->owner_user_id === (int) $user->id
                 || app(ChatAccessService::class)->can($user, 'can_manage_members')
                 || ($membership !== null && $membership->can_manage_members)
             );
