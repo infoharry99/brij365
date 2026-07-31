@@ -38,6 +38,7 @@ class WorkTaskIndexRequest extends FormRequest
             'scope' => ['nullable', 'string', Rule::in(['dashboard', 'mine', 'assigned-to-me', 'assigned-by-me', 'team', 'department', 'all', 'due-today', 'due-week', 'overdue', 'pending', 'completed', 'archived', 'activity', 'reports', 'analytics', 'templates', 'settings'])],
             'view' => ['nullable', 'string', Rule::in(['board', 'list', 'calendar'])],
             'task_id' => ['nullable', 'integer', 'min:1'],
+            'tab' => ['nullable', 'string', Rule::in(['details', 'subtasks', 'checklist', 'comments', 'activity', 'time', 'info'])],
             'sort' => ['nullable', 'string', Rule::in(['task_number', 'title', 'priority', 'status', 'due_at', 'created_at'])],
             'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
             'create' => ['nullable', 'boolean'],
@@ -55,7 +56,7 @@ class WorkTaskIndexRequest extends FormRequest
                 app(QueryFilterPolicy::class)->rejectUnexpected(
                     $validator,
                     $this->query(),
-                    ['status', 'priority', 'assigned_to_user_id', 'project_id', 'module_context', 'due_from', 'due_to', 'q', 'format', 'page', 'scope', 'view', 'task_id', 'sort', 'direction', 'create', 'template', 'focus_date', 'settings_tab', 'activity_filter'],
+                    ['status', 'priority', 'assigned_to_user_id', 'project_id', 'module_context', 'due_from', 'due_to', 'q', 'format', 'page', 'scope', 'view', 'task_id', 'tab', 'sort', 'direction', 'create', 'template', 'focus_date', 'settings_tab', 'activity_filter'],
                 );
 
                 if ($validator->errors()->isNotEmpty()) {
