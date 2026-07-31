@@ -41,7 +41,7 @@
                     $parentMsg = $message->parent ?? ($message->parent_message_id ? \App\Models\ChatMessage::with('sender')->find($message->parent_message_id) : null);
                 @endphp
                 @if ($parentMsg)
-                    <div class="b360-chat-reply">
+                    <div class="b360-chat-reply" data-parent-id="{{ $parentMsg->id }}" style="cursor: pointer;" title="Click to view original message" onclick="if (window.scrollToOriginalMessage) window.scrollToOriginalMessage({{ $parentMsg->id }});">
                         <strong><i class="fa-solid fa-reply" style="font-size:10px; margin-right:4px; opacity:0.8;"></i>{{ $parentMsg->sender?->name ?? 'Message' }}</strong>
                         <span>{{ $parentMsg->body ? str($parentMsg->body)->squish()->limit(90) : 'Attachment' }}</span>
                     </div>

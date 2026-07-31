@@ -538,9 +538,36 @@
             border-radius: 6px;
             padding: 6px 10px;
             margin-bottom: 6px;
+            transition: all 0.15s ease-in-out;
+        }
+        .b360-chat-reply:hover {
+            background: rgba(6, 207, 156, 0.12) !important;
+            transform: translateX(2px);
         }
         .b360-thread-message.is-mine .b360-chat-reply {
             border-left-color: #028090 !important;
+        }
+        .b360-thread-message.is-mine .b360-chat-reply:hover {
+            background: rgba(2, 128, 144, 0.15) !important;
+        }
+
+        @keyframes b360MessagePulse {
+            0% {
+                background-color: #FEF08A !important;
+                box-shadow: 0 0 0 3px #FACC15, 0 4px 12px rgba(250, 204, 21, 0.3) !important;
+            }
+            70% {
+                background-color: #FEF9C3 !important;
+                box-shadow: 0 0 0 2px #FDE047, 0 2px 8px rgba(253, 224, 71, 0.2) !important;
+            }
+            100% {
+                background-color: transparent !important;
+                box-shadow: none !important;
+            }
+        }
+        .b360-message-highlight {
+            animation: b360MessagePulse 2.2s ease-in-out forwards !important;
+            border-radius: 8px !important;
         }
 </style>
 @section('content')
@@ -1179,6 +1206,20 @@
 
                 textarea.dispatchEvent(new Event('input', { bubbles: true }));
                 textarea.focus();
+            };
+
+            window.scrollToOriginalMessage = function(parentId) {
+                if (!parentId) return;
+                const targetEl = document.querySelector('.b360-thread-message[data-message-id="' + parentId + '"]');
+                if (targetEl) {
+                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetEl.classList.remove('b360-message-highlight');
+                    void targetEl.offsetWidth; // trigger reflow
+                    targetEl.classList.add('b360-message-highlight');
+                    setTimeout(function() {
+                        targetEl.classList.remove('b360-message-highlight');
+                    }, 2300);
+                }
             };
         })();
     </script>
