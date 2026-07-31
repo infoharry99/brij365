@@ -1208,6 +1208,57 @@
                 textarea.focus();
             };
 
+            window.selectReply = function(event) {
+                const target = (event?.currentTarget || event?.target)?.closest?.('.b360-chat-reply-action') || event?.currentTarget;
+                if (!target) return;
+
+                const messageId = target.dataset.messageId;
+                const sender = target.dataset.messageSender || 'Message';
+                const body = target.dataset.messageBody || '';
+
+                if (!messageId) return;
+
+                const composerBox = target.closest('.b360-chat-screen')?.querySelector('.b360-composer-box') || document.querySelector('.b360-composer-box');
+                const displayLabel = body ? `${sender}: "${body}"` : `${sender}`;
+
+                if (composerBox) {
+                    let parentInput = composerBox.querySelector('[name="parent_message_id"]');
+                    if (parentInput) {
+                        if (parentInput.tagName === 'SELECT') {
+                            let option = parentInput.querySelector(`option[value="${messageId}"]`);
+                            if (!option) {
+                                option = document.createElement('option');
+                                option.value = messageId;
+                                parentInput.appendChild(option);
+                            }
+                            option.text = `Replying to ${displayLabel}`;
+                            parentInput.value = messageId;
+                        } else {
+                            parentInput.value = messageId;
+                        }
+                    }
+
+                    let statusEl = composerBox.querySelector('.b360-chat-composer-status') || composerBox.parentElement.querySelector('.b360-chat-composer-status');
+                    if (statusEl) {
+                        statusEl.textContent = `Replying to ${displayLabel}`;
+                        statusEl.style.display = 'block';
+                        statusEl.removeAttribute('hidden');
+                    }
+
+                    const textarea = composerBox.querySelector('textarea[name="body"]');
+                    if (textarea) textarea.focus();
+                }
+
+                try {
+                    const chat = window.getChatComponent ? window.getChatComponent() : null;
+                    if (chat) {
+                        chat.replyTarget = { id: messageId, sender, body };
+                        chat.statusTone = 'info';
+                        chat.statusMessage = `Replying to ${displayLabel}`;
+                    }
+                } catch (_e) {}
+            };
+
             window.scrollToOriginalMessage = function(parentId) {
                 if (!parentId) return;
                 const targetEl = document.querySelector('.b360-thread-message[data-message-id="' + parentId + '"]');
