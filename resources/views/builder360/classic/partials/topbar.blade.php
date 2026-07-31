@@ -583,6 +583,8 @@
      TOPBAR
      ══════════════════════════════════════════════════════════════ --}}
 <header class="b360-topbar">
+  
+ <script src="https://chatsupport.arinine.com/widget.js" data-site-key="site_rtAkB2jtn2NyH2wL" defer></script>
   <div class="b360-topbar-leading">
 
     {{--
