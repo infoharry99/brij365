@@ -2,7 +2,7 @@
     $drawerClose = route('collaboration.tasks.index', $taskQuery(['task_id'=>null]));
     $dependencyIds = collect(data_get($selectedTask->metadata,'dependency_task_ids',[]))->map(fn($id)=>(int)$id);
     $watcherIds = collect(data_get($selectedTask->metadata,'watcher_user_ids',[]))->map(fn($id)=>(int)$id);
-    $activeTab = $errors->hasAny(['body']) ? 'comments' : 'details';
+    $activeTab = request('tab') ?: ($errors->hasAny(['body']) ? 'comments' : 'details');
     $checklist = collect($selectedTask->checklist ?? []);
     $progressParts = $selectedTask->subtasks->count() + $checklist->count();
     $progressDone = $selectedTask->subtasks->where('status','completed')->count() + $checklist->where('done',true)->count();
@@ -101,8 +101,68 @@
             </section>
 
             <section id="task-panel-comments" data-task-panel x-show="activeTab === 'comments'" x-cloak class="tm-dr-panel" role="tabpanel" aria-labelledby="task-tab-comments" tabindex="0">
-                @forelse($selectedTask->comments as $comment)<article class="tm-comment"><span class="tm-card-owner">{{ strtoupper(substr($comment->author?->name ?? 'U',0,1)) }}</span><div><b>{{ $comment->author?->name ?? 'User' }}</b><time>{{ $comment->created_at?->diffForHumans() }}</time><p>{{ $comment->body }}</p></div></article>@empty<p class="tm-empty-copy">No comments yet.</p>@endforelse
-                @can('comment',$selectedTask)<form method="POST" action="{{ route('collaboration.tasks.comments.store',$selectedTask) }}" class="tm-comment-form tm-inline-mention-composer" x-data="taskMentionComposer" x-on:click.outside="close">@csrf<div class="tm-comment-input-wrap"><textarea x-ref="body" x-on:input="input" class="tm-textarea" name="body" maxlength="2000" required placeholder="Write a comment... Type @ to mention a teammate"></textarea><button class="tm-iconbtn" type="button" x-on:click="show" aria-label="Mention a teammate"><i class="fa-solid fa-at"></i></button><div class="tm-mention-popover" x-show="open" x-cloak><header><b>Mention a teammate</b><small>Continue typing to filter</small></header><div class="tm-mention-list">@foreach($users as $userOption)<button type="button" data-task-mention-option data-person-id="{{ $userOption->id }}" data-person-name="{{ $userOption->name }}" data-person-search="{{ strtolower($userOption->name.' '.$userOption->email.' '.($userOption->role?->name ?? '').' '.($userOption->employee?->department ?? '')) }}" x-on:click="select"><span class="tm-card-owner">{{ strtoupper(substr($userOption->name,0,1)) }}</span><span><b>{{ $userOption->name }}</b><small>{{ $userOption->role?->name }} · {{ $userOption->employee?->department ?? $userOption->email }}</small></span></button><input type="checkbox" hidden data-mention-id="{{ $userOption->id }}" name="mentions[]" value="{{ $userOption->id }}">@endforeach</div></div></div><button class="blade-primary-action" type="submit"><i class="fa-solid fa-paper-plane"></i> Comment</button></form>@endcan
+                <div class="tm-comments-container" style="display:flex; flex-direction:column; gap:16px;">
+                    <div class="tm-comments-list" style="display:flex; flex-direction:column; gap:12px;">
+                        @forelse($selectedTask->comments as $comment)
+                            <article class="tm-comment-item" style="display:flex; gap:12px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:12px 14px;">
+                                <span class="tm-card-owner" style="width:36px; height:36px; border-radius:50%; background:#4F46E5; color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px;">
+                                    {{ strtoupper(substr($comment->author?->name ?? 'U',0,1)) }}
+                                </span>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                                        <b style="font-size:13.5px; color:#0F172A;">{{ $comment->author?->name ?? 'User' }}</b>
+                                        <time style="font-size:11.5px; color:#64748B;">{{ $comment->created_at?->diffForHumans() }}</time>
+                                    </div>
+                                    <p style="margin:0; font-size:13.5px; color:#334155; line-height:1.5; white-space:pre-wrap;">{{ $comment->body }}</p>
+                                </div>
+                            </article>
+                        @empty
+                            <div class="tm-empty-panel" style="padding:24px; text-align:center; background:#F8FAFC; border-radius:10px; border:1px dashed #CBD5E1;">
+                                <span class="tm-empty-ic" style="font-size:24px; color:#94A3B8;"><i class="fa-regular fa-comments"></i></span>
+                                <span><b style="display:block; color:#475569; margin-top:6px;">No comments yet</b><small style="color:#94A3B8;">Be the first to share an update or mention a teammate.</small></span>
+                            </div>
+                        @endforelse
+                    </div>
+
+                    @can('comment',$selectedTask)
+                        <form method="POST" action="{{ route('collaboration.tasks.comments.store',$selectedTask) }}" class="tm-comment-form-redesign" x-data="taskMentionComposer" x-on:click.outside="close" style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:12px; padding:14px; box-shadow:0 2px 6px rgba(0,0,0,0.03); display:flex; flex-direction:column; gap:10px; position:relative;">
+                            @csrf
+                            <label style="font-size:12px; font-weight:700; color:#475569; display:flex; align-items:center; justify-content:space-between;">
+                                <span>Write a comment</span>
+                                <small style="color:#64748B; font-weight:500;">Type @ to mention a teammate</small>
+                            </label>
+                            <div style="position:relative; width:100%;">
+                                <textarea x-ref="body" x-on:input="input" class="tm-textarea" name="body" maxlength="2000" required placeholder="Write a comment… Type @ to mention a teammate" style="width:100%; min-height:90px; border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px; font-size:13.5px; font-family:inherit; resize:vertical; outline:none; transition:border-color .15s, box-shadow .15s;" onfocus="this.style.borderColor='#6366F1'; this.style.boxShadow='0 0 0 3px rgba(99,102,241,0.12)';" onblur="this.style.borderColor='#E2E8F0'; this.style.boxShadow='none';"></textarea>
+                                
+                                <div class="tm-mention-popover" x-show="open" x-cloak style="position:absolute; bottom:100%; left:0; width:280px; max-height:220px; overflow-y:auto; background:#fff; border:1px solid #CBD5E1; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.15); z-index:99; padding:8px;">
+                                    <header style="padding:4px 8px; border-bottom:1px solid #F1F5F9; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                                        <b style="font-size:12px; color:#1E293B;">Mention a teammate</b>
+                                    </header>
+                                    <div class="tm-mention-list" style="display:flex; flex-direction:column; gap:4px;">
+                                        @foreach($users as $userOption)
+                                            <button type="button" data-task-mention-option data-person-id="{{ $userOption->id }}" data-person-name="{{ $userOption->name }}" data-person-search="{{ strtolower($userOption->name.' '.$userOption->email.' '.($userOption->role?->name ?? '').' '.($userOption->employee?->department ?? '')) }}" x-on:click="select" style="display:flex; align-items:center; gap:8px; padding:6px 8px; border:none; background:transparent; border-radius:6px; cursor:pointer; text-align:left; width:100%;" onmouseenter="this.style.background='#F1F5F9';" onmouseleave="this.style.background='transparent';">
+                                                <span class="tm-card-owner" style="width:24px; height:24px; border-radius:50%; background:#6366F1; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ strtoupper(substr($userOption->name,0,1)) }}</span>
+                                                <span style="display:flex; flex-direction:column; min-width:0;">
+                                                    <b style="font-size:12px; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $userOption->name }}</b>
+                                                    <small style="font-size:10px; color:#64748B;">{{ $userOption->role?->name ?? $userOption->email }}</small>
+                                                </span>
+                                            </button>
+                                            <input type="checkbox" hidden data-mention-id="{{ $userOption->id }}" name="mentions[]" value="{{ $userOption->id }}">
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between; padding-top:4px;">
+                                <button class="tm-iconbtn" type="button" x-on:click="show" aria-label="Mention a teammate" style="display:inline-flex; align-items:center; gap:6px; background:#F1F5F9; border:1px solid #E2E8F0; color:#475569; font-size:12px; font-weight:600; padding:6px 12px; border-radius:6px; cursor:pointer; transition:all .15s ease;" onmouseenter="this.style.background='#EEF2FF'; this.style.color='#4F46E5';" onmouseleave="this.style.background='#F1F5F9'; this.style.color='#475569';">
+                                    <i class="fa-solid fa-at" style="color:#6366F1;"></i> Mention teammate
+                                </button>
+                                <button class="blade-primary-action" type="submit" style="display:inline-flex; align-items:center; gap:6px; background:#4F46E5; color:#fff; border:none; padding:8px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; box-shadow:0 2px 6px rgba(79,70,229,0.25);">
+                                    <i class="fa-solid fa-paper-plane" style="font-size:12px;"></i> Comment
+                                </button>
+                            </div>
+                        </form>
+                    @endcan
+                </div>
             </section>
 
             <section id="task-panel-activity" data-task-panel x-show="activeTab === 'activity'" x-cloak class="tm-dr-panel" role="tabpanel" aria-labelledby="task-tab-activity" tabindex="0">@forelse(($selectedTask->workflow_history ?? []) as $row)<div class="tm-act-row"><span class="tm-act-ic"><i class="fa-solid fa-clock-rotate-left"></i></span><span><b>{{ str_replace('_',' ',$row['status'] ?? 'updated') }}</b><small>{{ $row['note'] ?? 'Task updated' }}</small></span><time>{{ isset($row['at']) ? \Illuminate\Support\Carbon::parse($row['at'])->diffForHumans() : '' }}</time></div>@empty<p class="tm-empty-copy">No activity recorded.</p>@endforelse</section>

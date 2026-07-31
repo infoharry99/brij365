@@ -1210,9 +1210,42 @@ class CollaborationService
                     'severity' => $task->priority === 'critical' ? 'critical' : 'info',
                     'title' => "Comment on {$task->task_number}",
                     'body' => Str::limit($comment->body, 160),
-                    'action_url' => '/collaboration/tasks?q='.$task->task_number,
+                    'action_url' => '/collaboration/tasks?task_id='.$task->id.'&tab=comments',
                     'payload' => ['task_number' => $task->task_number, 'comment_id' => $comment->id],
                 ], $actor, $task));
+
+            // Sync task comment mention directly to Chat DM
+            if (! empty($mentions) && empty($data['metadata']['synced_from_chat'])) {
+                try {
+                    $chatConnect = app(\App\Services\Collaboration\ChatConnectService::class);
+                    foreach ($mentions as $mentionedUserId) {
+                        if ((int) $mentionedUserId === (int) $actor->id) {
+                            continue;
+                        }
+
+                        $dmConversation = $chatConnect->createConversation([
+                            'type' => 'direct_message',
+                            'member_user_ids' => [(int) $mentionedUserId],
+                        ], $actor, $request);
+
+                        $chatConnect->sendMessage($dmConversation, [
+                            'body' => $comment->body,
+                            'metadata' => [
+                                'type' => 'task_comment_mention',
+                                'task_id' => $task->id,
+                                'task_number' => $task->task_number,
+                                'task_title' => $task->title,
+                                'comment_id' => $comment->id,
+                                'action_url' => "/collaboration/tasks?task_id={$task->id}&tab=comments",
+                                'synced_from_task' => true,
+                            ],
+                        ], $actor, $request);
+                    }
+                } catch (\Throwable $e) {
+                    // Log or handle gracefully if chat dispatch fails
+                    \Illuminate\Support\Facades\Log::warning('Task comment chat mention dispatch failed: '.$e->getMessage());
+                }
+            }
 
             return $task->load($this->taskRelations());
         });

@@ -51,6 +51,31 @@
                     <div class="b360-message-bubble">{{ $message->body }}</div>
                 @endif
 
+                @php
+                    $taskMeta = $message->metadata ?? [];
+                    $taskNumber = $taskMeta['task_number'] ?? null;
+                    $taskTitle = $taskMeta['task_title'] ?? null;
+                    $actionUrl = $taskMeta['action_url'] ?? ($taskMeta['task_id'] ? "/collaboration/tasks?task_id={$taskMeta['task_id']}&tab=comments" : null);
+                @endphp
+                @if ($taskNumber || $actionUrl)
+                    <div class="b360-chat-task-card" style="margin-top: 6px; padding: 8px 12px; background: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 8px; font-size: 12.5px; display: flex; align-items: center; justify-content: space-between; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                        <div style="display:flex; align-items:center; gap:6px; min-width:0;">
+                            <span style="font-size:15px; color:#4F46E5;">📋</span>
+                            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                <strong style="color:#3730A3;">Task #{{ $taskNumber }}</strong>
+                                @if($taskTitle)
+                                    <small style="color:#475569;">· {{ $taskTitle }}</small>
+                                @endif
+                            </span>
+                        </div>
+                        @if($actionUrl)
+                            <a href="{{ $actionUrl }}" style="display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:700; color:#4338CA; text-decoration:none; background:#FFFFFF; padding:4px 10px; border-radius:6px; border:1px solid #C7D2FE; flex-shrink:0; transition:all .15s ease;" onmouseenter="this.style.background='#4F46E5'; this.style.color='#FFF';" onmouseleave="this.style.background='#FFF'; this.style.color='#4338CA';">
+                                Open Task <i class="fa-solid fa-arrow-right" style="font-size:10px;"></i>
+                            </a>
+                        @endif
+                    </div>
+                @endif
+
                 @foreach ($message->attachments ?? [] as $attachment)
                     <div class="b360-chat-attachment {{ $attachment->scan_status === 'blocked' ? 'is-blocked' : '' }}">
                         @if ($attachment->scan_status === 'blocked')
