@@ -1,0 +1,8 @@
+<form method="POST" action="{{ route('hr.exit-interviews.submit',$interview) }}" class="people-form-grid">@csrf @method('PATCH')
+    <label class="people-field"><span>Primary reason</span><select class="people-control" name="separation_reason" required>@foreach(['career_growth','compensation','relocation','manager_issue','work_environment','health','retirement','contract_end','personal','other'] as $value)<option value="{{ $value }}">{{ str_replace('_',' ',ucfirst($value)) }}</option>@endforeach</select></label>
+    <label class="people-field"><span>Rehire recommendation</span><select class="people-control" name="rehire_recommendation" required><option value="yes">Yes</option><option value="conditional">Conditional</option><option value="no">No</option></select></label>
+    @foreach(['overall_experience_rating'=>'Overall rating','manager_relationship_rating'=>'Manager rating','workload_rating'=>'Workload rating','compensation_rating'=>'Compensation rating'] as $name=>$label)<label class="people-field"><span>{{ $label }}</span><input class="people-control" type="number" min="1" max="5" name="{{ $name }}" @if($name === 'overall_experience_rating') required @endif></label>@endforeach
+    <label class="people-field is-wide"><span>Feedback</span><textarea class="people-control" name="public_feedback"></textarea></label>
+    <label class="people-field is-wide"><span>Confidential primary response</span><textarea class="people-control" name="confidential_responses[primary_reason]" required></textarea></label>
+    <button class="people-button is-primary" type="submit">Submit interview</button>
+</form>

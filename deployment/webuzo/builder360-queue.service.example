@@ -1,0 +1,17 @@
+[Unit]
+Description=Builder360 Queue Worker
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=WEBUZO_USER
+Group=WEBUZO_USER
+WorkingDirectory=/home/WEBUZO_USER/public_html/builder360
+ExecStart=/usr/bin/php artisan queue:work database --sleep=3 --tries=3 --timeout=120 --max-time=3600
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=3600
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,1 @@
+* * * * * cd /home/WEBUZO_USER/public_html/builder360 && /usr/bin/php artisan schedule:run >> /dev/null 2>&1

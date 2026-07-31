@@ -1,0 +1,4 @@
+<?php
+namespace App\Application\Maintenance\Actions;
+use App\Application\Maintenance\Data\SocietyWorkspaceData; use App\Domain\Maintenance\Services\MaintenanceRegister; use App\Models\SocietyFormation; use App\Models\User;
+final class ListSocietyWorkspace { public function __construct(private readonly MaintenanceRegister $r) {} public function execute(User $a,array $f): SocietyWorkspaceData { return new SocietyWorkspaceData($this->r->societies($a,$f),$f,$this->r->projects($a),['draft'=>'Draft','application_filed'=>'Application Filed','in_progress'=>'In Progress','formed'=>'Formed','handed_over'=>'Handed Over','blocked'=>'Blocked'],['cooperative_society'=>'Cooperative Society','apartment_association'=>'Apartment Association','commercial_association'=>'Commercial Association'],['canCreateSociety'=>$a->can('create',SocietyFormation::class)]); } }

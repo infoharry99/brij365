@@ -1,0 +1,12 @@
+<?php
+namespace App\Domain\Possession\Services;
+use App\Models\Booking; use App\Models\HandoverSnag; use App\Models\PossessionHandover; use App\Models\Project; use App\Models\User; use App\Services\Security\CompanyScopeService; use App\Support\PaginationPolicy; use Illuminate\Pagination\LengthAwarePaginator; use Illuminate\Support\Collection;
+final class PossessionRegister
+{
+    public function __construct(private readonly CompanyScopeService $scope,private readonly PaginationPolicy $pagination) {}
+    public function handovers(User $actor,array $filters): LengthAwarePaginator { return $this->scope->apply(PossessionHandover::query()->with(['booking','project','unit','customer','initiatedBy','completedBy','snags.reportedBy','snags.resolvedBy']),$actor)->when($filters['project_id']??null,fn($q,int $id)=>$q->where('project_id',$id))->when($filters['status']??null,fn($q,string $s)=>$q->where('status',$s))->orderByDesc('created_at')->paginate($this->pagination->workspacePerPage($filters['per_page']??null))->withQueryString(); }
+    public function snags(User $actor,array $filters): LengthAwarePaginator { return $this->scope->apply(HandoverSnag::query()->with(['handover.booking','handover.unit','reportedBy','resolvedBy']),$actor)->when($filters['possession_handover_id']??null,fn($q,int $id)=>$q->where('possession_handover_id',$id))->when($filters['status']??null,fn($q,string $s)=>$q->where('status',$s))->when($filters['severity']??null,fn($q,string $s)=>$q->where('severity',$s))->orderByDesc('created_at')->paginate($this->pagination->workspacePerPage($filters['per_page']??null))->withQueryString(); }
+    public function projects(User $actor): Collection { return $this->scope->apply(Project::query()->select(['id','company_id','code','name','status'])->where('status','active'),$actor)->orderBy('code')->get(); }
+    public function eligibleBookings(User $actor): Collection { return $this->scope->apply(Booking::query()->with(['project:id,code,name','unit:id,unit_code','customer:id,code,name'])->where('status','confirmed')->whereNotIn('id',PossessionHandover::query()->select('booking_id')),$actor)->orderByDesc('booked_on')->orderBy('booking_code')->limit(100)->get(); }
+    public function openHandovers(User $actor): Collection { return $this->scope->apply(PossessionHandover::query()->with(['booking','project','unit','customer'])->where('status','!=','completed'),$actor)->orderByDesc('created_at')->get(); }
+}

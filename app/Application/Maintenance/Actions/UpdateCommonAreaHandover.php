@@ -1,0 +1,3 @@
+<?php
+namespace App\Application\Maintenance\Actions; use App\Application\Maintenance\Data\MaintenanceCommandData; use App\Models\CommonAreaHandoverItem; use App\Services\Maintenance\MaintenanceSocietyService;
+final class UpdateCommonAreaHandover { public function __construct(private readonly MaintenanceSocietyService $s) {} public function execute(CommonAreaHandoverItem $m,MaintenanceCommandData $c): CommonAreaHandoverItem { return $this->s->updateCommonAreaHandoverItem($m,$c->attributes,$c->actor,$c->request); } }

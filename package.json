@@ -1,0 +1,20 @@
+{
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build"
+    },
+    "dependencies": {
+        "@alpinejs/csp": "^3.15.12",
+        "@fortawesome/fontawesome-free": "^7.3.0",
+        "laravel-echo": "^2.3.7",
+        "pusher-js": "^8.5.0"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "4.3.2",
+        "laravel-vite-plugin": "2.1.0",
+        "tailwindcss": "4.3.2",
+        "vite": "7.3.6"
+    }
+}
