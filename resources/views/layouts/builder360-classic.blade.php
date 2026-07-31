@@ -11,7 +11,7 @@
     @stack('styles')
 </head>
 <body
-    class="b360-classic"
+    class="b360-classic sidebar-collapsed"
     x-data="builderShell"
     x-bind:class="navigationClasses"
     x-on:keydown.escape.window="handleEscape"

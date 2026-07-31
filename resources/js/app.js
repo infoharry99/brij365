@@ -71,7 +71,7 @@ const PEOPLE_WORKSPACE_BREAKPOINT = 900;
 
 Alpine.data('builderShell', () => ({
     navigationOpen: false,
-    sidebarCollapsed: false,
+    sidebarCollapsed: true,
     theme: 'light',
     themeBusy: false,
     themeError: '',
@@ -80,7 +80,8 @@ Alpine.data('builderShell', () => ({
     init() {
         this.theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
         const storedSidebar = this.storageGet(BUILDER_SIDEBAR_KEY);
-        this.sidebarCollapsed = ! this.isMobile() && (storedSidebar === null || storedSidebar === undefined ? true : storedSidebar === '1');
+        // Default to collapsed on initial page load unless explicitly set to '0' (expanded)
+        this.sidebarCollapsed = ! this.isMobile() && (storedSidebar === null || storedSidebar === undefined || storedSidebar === '1');
     },
 
     get navigationClasses() {
