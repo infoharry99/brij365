@@ -493,6 +493,73 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             letter-spacing: 0.2px;
         }
+
+        /* Authentic WhatsApp Chat Styling */
+        .b360-thread-timeline {
+            background-color: #EFEAE2 !important;
+            background-image: radial-gradient(#E2DCD3 1.2px, transparent 1.2px) !important;
+            background-size: 18px 18px !important;
+            padding: 16px 20px !important;
+            border-radius: 12px;
+        }
+        .b360-thread-message {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            max-width: 75%;
+            align-self: flex-start;
+        }
+        .b360-thread-message.is-mine {
+            flex-direction: row-reverse;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .b360-message-bubble {
+            width: fit-content;
+            max-width: 100%;
+            padding: 8px 12px;
+            border-radius: 0px 12px 12px 12px !important;
+            background: #FFFFFF !important;
+            color: #111B21 !important;
+            border: none !important;
+            white-space: pre-wrap;
+            line-height: 1.45;
+            font-size: 14px;
+            box-shadow: 0 1px 2px rgba(11, 20, 26, 0.12) !important;
+            position: relative;
+        }
+        .b360-thread-message.is-mine .b360-message-bubble {
+            border-radius: 12px 0px 12px 12px !important;
+            background: #D9FDD3 !important;
+            color: #111B21 !important;
+        }
+        .b360-message-content header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px !important;
+            font-size: 11px;
+            color: #667781;
+        }
+        .b360-thread-message.is-mine .b360-message-content header {
+            justify-content: flex-end;
+        }
+        .b360-chat-read-state {
+            color: #53BDEB !important;
+            font-weight: 700;
+            font-size: 13px;
+            margin-left: 4px;
+        }
+        .b360-chat-reply {
+            background: rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #06CF9C !important;
+            border-radius: 6px;
+            padding: 6px 10px;
+            margin-bottom: 6px;
+        }
+        .b360-thread-message.is-mine .b360-chat-reply {
+            border-left-color: #028090 !important;
+        }
 </style>
 @section('content')
     <section
