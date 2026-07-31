@@ -1775,15 +1775,17 @@ Alpine.data('chatRealtime', () => ({
         this.replyTarget = { id: messageId, sender, body };
 
         const parentInput = this.$refs.parentMessageInput || this.$refs.composer?.querySelector('[name="parent_message_id"]') || document.querySelector('[name="parent_message_id"]');
+        const displaySnippet = body ? `${sender}: "${body}"` : `${sender}`;
+
         if (parentInput) {
             if (parentInput.tagName === 'SELECT') {
                 let option = parentInput.querySelector(`option[value="${messageId}"]`);
                 if (! option) {
                     option = document.createElement('option');
                     option.value = messageId;
-                    option.text = `Replying to ${sender}`;
                     parentInput.appendChild(option);
                 }
+                option.text = `Replying to ${displaySnippet}`;
                 parentInput.value = messageId;
             } else {
                 parentInput.value = messageId;
@@ -1791,7 +1793,7 @@ Alpine.data('chatRealtime', () => ({
         }
 
         this.statusTone = 'info';
-        this.statusMessage = `Replying to ${sender}`;
+        this.statusMessage = `Replying to ${displaySnippet}`;
         
         const textarea = this.$refs.composer?.querySelector('textarea[name="body"]') || document.querySelector('textarea[name="body"]');
         if (textarea) {

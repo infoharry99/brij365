@@ -907,7 +907,7 @@
                                     <select name="parent_message_id" hidden tabindex="-1" aria-hidden="true">
                                         <option value="">New message</option>
                                         @foreach ($chatMessages->take(-20) as $parentMessage)
-                                            <option value="{{ $parentMessage->id }}">{{ $parentMessage->message_number }} · {{ str($parentMessage->body)->squish()->limit(50) }}</option>
+                                            <option value="{{ $parentMessage->id }}">{{ $parentMessage->sender?->name ?? 'Message' }}: "{{ str($parentMessage->body ?? 'Attachment')->squish()->limit(50) }}"</option>
                                         @endforeach
                                     </select>
                                     <input type="hidden" name="priority" value="normal">
