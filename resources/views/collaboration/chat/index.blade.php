@@ -629,9 +629,21 @@
                                                             </div>
                                                             @if($selectedConversation->type !== 'direct_message')
                                                                 @if((int)$member->user_id === (int)auth()->id() && (int)$selectedConversation->owner_user_id !== (int)auth()->id())
-                                                                
+                                                                    <form method="POST" action="{{ route('collaboration.chat.conversations.members.destroy', [$selectedConversation, $member->user]) }}" onsubmit="return confirm('Leave this {{ strtolower(str($selectedConversation->type)->headline()) }}?');">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="b360-remove-member-btn" style="background: #FEF2F2; color: #EF4444; border: 1px solid #FCA5A5; border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: background .15s;" title="Leave conversation">
+                                                                            <i class="fa-solid fa-right-from-bracket" style="font-size: 10px;" aria-hidden="true"></i> Leave
+                                                                        </button>
+                                                                    </form>
                                                                 @elseif((int)$selectedConversation->owner_user_id !== (int)$member->user_id && auth()->user()->can('manageMembers', $selectedConversation))
-                                                                
+                                                                    <form method="POST" action="{{ route('collaboration.chat.conversations.members.destroy', [$selectedConversation, $member->user]) }}" onsubmit="return confirm('Remove {{ addslashes($member->user->name) }} from this {{ strtolower(str($selectedConversation->type)->headline()) }}?');">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="b360-remove-member-btn" style="background: #FEF2F2; color: #EF4444; border: 1px solid #FCA5A5; border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: background .15s;" title="Remove member">
+                                                                            <i class="fa-solid fa-user-minus" style="font-size: 10px;" aria-hidden="true"></i> Remove
+                                                                        </button>
+                                                                    </form>
                                                                 @endif
                                                             @endif
                                                         </div>
