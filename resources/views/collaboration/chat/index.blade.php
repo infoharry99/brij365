@@ -411,6 +411,56 @@
             background: #FEE2E2;
             color: #EF4444;
         }
+        .b360-ai-assistant-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%);
+            border: 1px solid #E0E7FF;
+            border-radius: 10px;
+            padding: 8px 14px;
+            margin-bottom: 10px;
+        }
+        .b360-ai-assistant-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #4F46E5;
+        }
+        .b360-ai-assistant-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .b360-ai-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #FFFFFF;
+            border: 1px solid #C7D2FE;
+            color: #4338CA;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        }
+        .b360-ai-btn:hover {
+            background: #4F46E5;
+            color: #FFFFFF;
+            border-color: #4F46E5;
+            box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+            transform: translateY(-1px);
+        }
+        .b360-ai-btn:active {
+            transform: translateY(0);
+        }
 </style>
 @section('content')
     <section
@@ -727,6 +777,26 @@
                         <div class="b360-composer-stack">
                             <form method="POST" action="{{ route('collaboration.chat.conversations.messages.store', $selectedConversation) }}" enctype="multipart/form-data" class="b360-composer-box" x-ref="composer" x-on:submit.prevent="sendMessage">
                                 @csrf
+                                <div class="b360-ai-assistant-bar">
+                                    <div class="b360-ai-assistant-title">
+                                        <span aria-hidden="true">✨</span>
+                                        <span>AI Agent Reply Assistant:</span>
+                                    </div>
+                                    <div class="b360-ai-assistant-actions">
+                                        <button type="button" class="b360-ai-btn" x-on:click="aiPolishMessage ? aiPolishMessage('professional') : window.aiPolishMessage('professional', $el)">
+                                            <span>💼</span>
+                                            <span>Make Professional</span>
+                                        </button>
+                                        <button type="button" class="b360-ai-btn" x-on:click="aiPolishMessage ? aiPolishMessage('friendly') : window.aiPolishMessage('friendly', $el)">
+                                            <span>😊</span>
+                                            <span>Make Friendly</span>
+                                        </button>
+                                        <button type="button" class="b360-ai-btn" x-on:click="aiPolishMessage ? aiPolishMessage('fix_grammar') : window.aiPolishMessage('fix_grammar', $el)">
+                                            <span>✨</span>
+                                            <span>Fix & Polish</span>
+                                        </button>
+                                    </div>
+                                </div>
                                 <textarea name="body" maxlength="10000" placeholder="Write a message…" aria-label="Message" x-on:input="handleComposerInput" x-on:keydown.enter="handleComposerKeydown" x-bind:disabled="busy"></textarea>
                                 <div class="b360-chat-attachment-selection" x-show="selectedAttachments && selectedAttachments.length > 0" x-cloak aria-label="Selected attachments">
                                     <template x-for="attachment in selectedAttachments" x-bind:key="attachment.key">
@@ -1016,6 +1086,28 @@
                     }, 50);
                 }
             });
+
+            window.aiPolishMessage = function(style, btnElement) {
+                const composerBox = btnElement ? btnElement.closest('.b360-composer-box') : document.querySelector('.b360-composer-box');
+                const textarea = composerBox ? composerBox.querySelector('textarea[name="body"]') : document.querySelector('textarea[name="body"]');
+                if (!textarea) return;
+
+                let txt = textarea.value.trim();
+                if (!txt) {
+                    txt = "Thank you for reaching out to us today! How can I assist you further?";
+                }
+
+                if (style === 'professional') {
+                    textarea.value = 'Dear Customer, ' + txt + '. Please let us know if you require any additional assistance.';
+                } else if (style === 'friendly') {
+                    textarea.value = 'Hi there! 😊 ' + txt + ' Hope that helps! Feel free to ask if you have more questions.';
+                } else if (style === 'fix_grammar') {
+                    textarea.value = txt.charAt(0).toUpperCase() + txt.slice(1) + (txt.endsWith('.') ? '' : '.');
+                }
+
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                textarea.focus();
+            };
         })();
     </script>
 @endsection

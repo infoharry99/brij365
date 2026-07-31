@@ -1506,8 +1506,29 @@ Alpine.data('chatRealtime', () => ({
     onlineCount: 0,
     selectedAttachments: [],
     mentionMatchCount: 0,
-    mentionTriggerStart: null,
     replyTarget: null,
+
+    aiPolishMessage(style) {
+        const composerBox = this.$el ? (this.$el.closest('.b360-composer-box') || this.$el) : null;
+        const textarea = composerBox ? composerBox.querySelector('textarea[name="body"]') : document.querySelector('.b360-composer-box textarea[name="body"]');
+        if (!textarea) return;
+
+        let txt = textarea.value.trim();
+        if (!txt) {
+            txt = "Thank you for reaching out to us today! How can I assist you further?";
+        }
+
+        if (style === 'professional') {
+            textarea.value = `Dear Customer, ${txt}. Please let us know if you require any additional assistance.`;
+        } else if (style === 'friendly') {
+            textarea.value = `Hi there! 😊 ${txt} Hope that helps! Feel free to ask if you have more questions.`;
+        } else if (style === 'fix_grammar') {
+            textarea.value = txt.charAt(0).toUpperCase() + txt.slice(1) + (txt.endsWith('.') ? '' : '.');
+        }
+
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        textarea.focus();
+    },
 
     get hasSelectedAttachments() {
         return this.selectedAttachments.length > 0;
