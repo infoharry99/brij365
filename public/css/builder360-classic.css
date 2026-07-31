@@ -222,7 +222,7 @@
 .b360-composer-options label span { display: block; margin-bottom: 5px; color: #596276; font-size: 12px; font-weight: 800; }
 .b360-composer-options select { width: 100%; min-height: 40px; border: 1px solid var(--b360-border); border-radius: 10px; background: #fff; padding: 7px 10px; }
 .b360-composer-hint { margin-left: 44px; color: #98a0af; font-size: 11px; font-weight: 650; }
-.b360-composer-send { width: 42px; height: 42px; margin-left: auto; border: 0; border-radius: 12px; background: var(--b360-accent); color: #fff; font-size: 16px; box-shadow: 0 8px 18px rgba(81,70,229,.24); }
+.b360-composer-send { width: 42px; height: 42px; margin-left: auto;margin-right: 10px; border: 0; border-radius: 12px; background: var(--b360-accent); color: #fff; font-size: 16px; box-shadow: 0 8px 18px rgba(81,70,229,.24); }
 .b360-composer-send:hover { background: #4338ca; transform: translateY(-1px); }
 .b360-chat-poll-create { position: absolute; left: 100px; bottom: 47px; z-index: 3; width: 36px; height: 36px; }
 .b360-chat-poll-create > summary { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 9px; background: transparent; color: #7c8799; font-size: 14px; cursor: pointer; list-style: none; }
