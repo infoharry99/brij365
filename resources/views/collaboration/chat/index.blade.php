@@ -757,9 +757,9 @@
 
                 @if ($canPost)
                     <footer class="b360-thread-composer">
-                        <div class="cc-typing-bar" x-show="hasTypingUsers" x-cloak style="display: none;">
+                        <div class="cc-typing-bar" x-show="typeof hasTypingUsers !== 'undefined' && hasTypingUsers" x-cloak style="display: none;">
                             <span class="cc-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-                            <span x-text="typingIndicatorText"></span>
+                            <span x-text="typeof typingIndicatorText !== 'undefined' ? typingIndicatorText : ''"></span>
                         </div>
                         <div class="b360-composer-stack">
                             <form method="POST" action="{{ route('collaboration.chat.conversations.messages.store', $selectedConversation) }}" enctype="multipart/form-data" class="b360-composer-box" x-ref="composer" x-on:submit.prevent="sendMessage">
