@@ -412,54 +412,36 @@
             background: #FEE2E2;
             color: #EF4444;
         }
-        .b360-ai-assistant-bar {
+        .b360-ai-inline-tools {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            background: linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%);
-            border: 1px solid #E0E7FF;
-            border-radius: 10px;
-            padding: 8px 14px;
-            margin-bottom: 10px;
+            gap: 5px;
+            margin-left: 6px;
+            margin-right: auto;
         }
-        .b360-ai-assistant-title {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 13px;
-            font-weight: 700;
-            color: #4F46E5;
-        }
-        .b360-ai-assistant-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .b360-ai-btn {
+        .b360-ai-chip {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            background: #FFFFFF;
-            border: 1px solid #C7D2FE;
-            color: #4338CA;
-            font-size: 12px;
+            gap: 4px;
+            background: #F0F3FF;
+            border: 1px solid #D6E0FF;
+            color: #3730A3;
+            font-size: 11px;
             font-weight: 600;
-            padding: 6px 14px;
-            border-radius: 8px;
+            padding: 3px 9px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.15s ease-in-out;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+            transition: all 0.15s ease;
+            white-space: nowrap;
         }
-        .b360-ai-btn:hover {
+        .b360-ai-chip:hover {
             background: #4F46E5;
             color: #FFFFFF;
             border-color: #4F46E5;
-            box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
             transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
         }
-        .b360-ai-btn:active {
+        .b360-ai-chip:active {
             transform: translateY(0);
         }
         .b360-chat-date-separator {
@@ -876,26 +858,6 @@
                         <div class="b360-composer-stack">
                             <form method="POST" action="{{ route('collaboration.chat.conversations.messages.store', $selectedConversation) }}" enctype="multipart/form-data" class="b360-composer-box" x-ref="composer" x-on:submit.prevent="sendMessage">
                                 @csrf
-                                <div class="b360-ai-assistant-bar">
-                                    <div class="b360-ai-assistant-title">
-                                        <span aria-hidden="true">✨</span>
-                                        <span>AI Agent Reply Assistant:</span>
-                                    </div>
-                                    <div class="b360-ai-assistant-actions">
-                                        <button type="button" class="b360-ai-btn" onclick="window.aiPolishMessage('professional', this)">
-                                            <span>💼</span>
-                                            <span>Make Professional</span>
-                                        </button>
-                                        <button type="button" class="b360-ai-btn" onclick="window.aiPolishMessage('friendly', this)">
-                                            <span>😊</span>
-                                            <span>Make Friendly</span>
-                                        </button>
-                                        <button type="button" class="b360-ai-btn" onclick="window.aiPolishMessage('fix_grammar', this)">
-                                            <span>✨</span>
-                                            <span>Fix & Polish</span>
-                                        </button>
-                                    </div>
-                                </div>
                                 <textarea name="body" maxlength="10000" placeholder="Write a message…" aria-label="Message" x-on:input="handleComposerInput" x-on:keydown.enter="handleComposerKeydown" x-bind:disabled="busy"></textarea>
                                 <div class="b360-chat-attachment-selection" x-show="selectedAttachments && selectedAttachments.length > 0" x-cloak aria-label="Selected attachments">
                                     <template x-for="attachment in selectedAttachments" x-bind:key="attachment.key">
@@ -941,6 +903,17 @@
                                             </div>
                                         </div>
                                     </details>
+                                    <div class="b360-ai-inline-tools" title="AI Polish Assistant">
+                                        <button type="button" class="b360-ai-chip" onclick="window.aiPolishMessage('professional', this)" title="Make Professional">
+                                            <span>💼</span> <span>Professional</span>
+                                        </button>
+                                        <button type="button" class="b360-ai-chip" onclick="window.aiPolishMessage('friendly', this)" title="Make Friendly">
+                                            <span>😊</span> <span>Friendly</span>
+                                        </button>
+                                        <button type="button" class="b360-ai-chip" onclick="window.aiPolishMessage('fix_grammar', this)" title="Fix & Polish">
+                                            <span>✨</span> <span>Fix & Polish</span>
+                                        </button>
+                                    </div>
                                     <span class="b360-composer-hint">Enter to send · Shift+Enter for newline</span>
                                     <button class="b360-composer-send" type="submit" aria-label="Send message" x-bind:disabled="busy"><i class="fa-solid fa-paper-plane"></i></button>
                                 </div>
