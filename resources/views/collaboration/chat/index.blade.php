@@ -783,15 +783,15 @@
                                         <span>AI Agent Reply Assistant:</span>
                                     </div>
                                     <div class="b360-ai-assistant-actions">
-                                        <button type="button" class="b360-ai-btn" x-on:click="aiPolishMessage ? aiPolishMessage('professional') : window.aiPolishMessage('professional', $el)">
+                                        <button type="button" class="b360-ai-btn" x-on:click="window.aiPolishMessage('professional', $el)">
                                             <span>💼</span>
                                             <span>Make Professional</span>
                                         </button>
-                                        <button type="button" class="b360-ai-btn" x-on:click="aiPolishMessage ? aiPolishMessage('friendly') : window.aiPolishMessage('friendly', $el)">
+                                        <button type="button" class="b360-ai-btn" x-on:click="window.aiPolishMessage('friendly', $el)">
                                             <span>😊</span>
                                             <span>Make Friendly</span>
                                         </button>
-                                        <button type="button" class="b360-ai-btn" x-on:click="aiPolishMessage ? aiPolishMessage('fix_grammar') : window.aiPolishMessage('fix_grammar', $el)">
+                                        <button type="button" class="b360-ai-btn" x-on:click="window.aiPolishMessage('fix_grammar', $el)">
                                             <span>✨</span>
                                             <span>Fix & Polish</span>
                                         </button>
