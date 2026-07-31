@@ -81,15 +81,15 @@
         display: none;
         width: 38px;
         height: 38px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, var(--sb-brand), #818cf8);
-        color: #fff;
+        /* border-radius: 10px; */
+        /* background: linear-gradient(135deg, var(--sb-brand), #818cf8); */
+        /* color: #fff; */
         font-size: 12px;
         font-weight: 800;
         align-items: center;
         justify-content: center;
         letter-spacing: .04em;
-        box-shadow: 0 4px 12px rgba(246,116,12,.28);
+        /* box-shadow: 0 4px 12px rgba(246,116,12,.28); */
         flex-shrink: 0;
     }
     body.sidebar-collapsed .b360-logo-full {
@@ -346,11 +346,11 @@
         <a href="<?php echo e(route('builder360.dashboard')); ?>" class="b360-brand-logo-link" title="Builder365 ERP & CRM">
             <img src="https://build365.arinine.com/Logo1.png" alt="Builder365 ERP & CRM" class="b360-logo-full">
             <div class="b360-logo-compact" aria-hidden="true">
-                <span>B365</span>
+                <img src="https://build365.arinine.com/38.png" alt="Builder365 ERP & CRM" style ="width: 70px; height: 55px;">
             </div>
         </a>
        
-        <button
+        <!-- <button
             class="b360-collapse-btn"
             id="b360CollapseBtn"
             type="button"
@@ -362,7 +362,7 @@
             <span class="b360-collapse-icon" aria-hidden="true">
                 <i class="fa-solid fa-chevron-left"></i>
             </span>
-        </button>
+        </button> -->
     </div>
 
     
