@@ -914,7 +914,7 @@
                                             <span>✨</span> <span>Fix & Polish</span>
                                         </button>
                                     </div>
-                                    <span class="b360-composer-hint">Enter to send · Shift+Enter for newline</span>
+                                    <span class="b360-composer-hint"></span>
                                     <button class="b360-composer-send" type="submit" aria-label="Send message" x-bind:disabled="busy"><i class="fa-solid fa-paper-plane"></i></button>
                                 </div>
                             </form>
