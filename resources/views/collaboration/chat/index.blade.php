@@ -716,7 +716,7 @@
                             <form method="POST" action="{{ route('collaboration.chat.conversations.messages.store', $selectedConversation) }}" enctype="multipart/form-data" class="b360-composer-box" x-ref="composer" x-on:submit.prevent="sendMessage" onpaste="window.handlePaste ? window.handlePaste(event) : null">
                                 @csrf
                                 <textarea name="body" maxlength="10000" placeholder="Write a message…" aria-label="Message" x-on:input="handleComposerInput" x-on:keydown.enter="handleComposerKeydown" onpaste="window.handlePaste ? window.handlePaste(event) : null" x-bind:disabled="busy"></textarea>
-                                <div class="b360-chat-attachment-selection" x-show="hasSelectedAttachments" x-cloak aria-label="Selected attachments">
+                                <div class="b360-chat-attachment-selection" x-show="selectedAttachments && selectedAttachments.length > 0" x-cloak aria-label="Selected attachments">
                                     <template x-for="attachment in selectedAttachments" x-bind:key="attachment.key">
                                         <span class="b360-chat-selected-file">
                                             <template x-if="attachment.preview">
@@ -806,6 +806,88 @@
     </section>
     <script>
         (function() {
+            function updateDOMPreview(composer, files, chat) {
+                if (! composer) return;
+                let container = composer.querySelector('.b360-chat-attachment-selection');
+                if (! container) {
+                    container = document.createElement('div');
+                    container.className = 'b360-chat-attachment-selection';
+                    const tools = composer.querySelector('.b360-composer-tools');
+                    if (tools) {
+                        composer.insertBefore(container, tools);
+                    } else {
+                        composer.appendChild(container);
+                    }
+                }
+
+                container.innerHTML = '';
+                const fileArray = Array.from(files || []);
+
+                if (fileArray.length === 0) {
+                    container.style.display = 'none';
+                    return;
+                }
+
+                container.style.display = 'flex';
+
+                fileArray.forEach(function(file, idx) {
+                    const isImg = file.type ? file.type.startsWith('image/') : /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '');
+                    const span = document.createElement('span');
+                    span.className = 'b360-chat-selected-file';
+
+                    if (isImg && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+                        try {
+                            const img = document.createElement('img');
+                            img.src = URL.createObjectURL(file);
+                            img.alt = file.name || 'Pasted image';
+                            img.className = 'b360-chat-preview-thumbnail';
+                            span.appendChild(img);
+                        } catch (_e) {
+                            const icon = document.createElement('i');
+                            icon.className = 'fa-solid fa-file';
+                            span.appendChild(icon);
+                        }
+                    } else {
+                        const icon = document.createElement('i');
+                        icon.className = 'fa-solid fa-file';
+                        span.appendChild(icon);
+                    }
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'b360-chat-file-name';
+                    nameSpan.textContent = file.name || ('Pasted image ' + (idx + 1));
+                    span.appendChild(nameSpan);
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.type = 'button';
+                    removeBtn.setAttribute('aria-label', 'Remove attachment');
+                    removeBtn.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
+
+                    removeBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const input = composer.querySelector('input[type="file"][name="attachments[]"]');
+                        if (input && typeof DataTransfer !== 'undefined') {
+                            const remainingTransfer = new DataTransfer();
+                            Array.from(input.files || []).forEach(function(f) {
+                                if (f !== file && f.name !== file.name) {
+                                    remainingTransfer.items.add(f);
+                                }
+                            });
+                            input.files = remainingTransfer.files;
+                            if (chat && Array.isArray(chat.selectedAttachments)) {
+                                const removeIdx = chat.selectedAttachments.findIndex(function(a) { return a.name === file.name; });
+                                if (removeIdx >= 0) chat.selectedAttachments.splice(removeIdx, 1);
+                            }
+                            updateDOMPreview(composer, remainingTransfer.files, chat);
+                        }
+                    });
+
+                    span.appendChild(removeBtn);
+                    container.appendChild(span);
+                });
+            }
+
             window.handlePaste = function(event) {
                 const clipboard = event?.clipboardData || window.clipboardData;
                 if (! clipboard) return;
@@ -884,20 +966,29 @@
                 if (addedCount > 0) {
                     input.files = transfer.files;
                     const chat = window.getChatComponent ? window.getChatComponent() : null;
-                    if (chat && typeof chat.syncSelectedAttachments === 'function') {
-                        chat.syncSelectedAttachments(transfer.files);
-                    } else if (chat && Array.isArray(chat.selectedAttachments)) {
-                        chat.selectedAttachments = Array.from(transfer.files).map(function(file, index) {
+
+                    if (chat && Array.isArray(chat.selectedAttachments)) {
+                        const newItems = Array.from(transfer.files).map(function(file, index) {
+                            const isImg = file.type ? file.type.startsWith('image/') : /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '');
                             return {
                                 file: file,
                                 name: file.name,
                                 size: file.size,
                                 type: file.type,
-                                preview: file.type && file.type.startsWith('image/') && typeof URL !== 'undefined' ? URL.createObjectURL(file) : null,
+                                preview: isImg && typeof URL !== 'undefined' ? URL.createObjectURL(file) : null,
                                 key: file.name + '-' + file.size + '-' + (file.lastModified || Date.now()) + '-' + index,
                             };
                         });
+
+                        try {
+                            chat.selectedAttachments.splice(0, chat.selectedAttachments.length);
+                            newItems.forEach(function(item) {
+                                chat.selectedAttachments.push(item);
+                            });
+                        } catch (_e) {}
                     }
+
+                    updateDOMPreview(composer, transfer.files, chat);
                 }
             };
 
@@ -905,6 +996,15 @@
                 const target = event.target;
                 if (target && (target.tagName === 'TEXTAREA' || (target.closest && target.closest('.b360-composer-box')))) {
                     window.handlePaste(event);
+                }
+            });
+
+            document.addEventListener('submit', function(event) {
+                const form = event.target;
+                if (form && form.classList.contains('b360-composer-box')) {
+                    setTimeout(function() {
+                        updateDOMPreview(form, [], window.getChatComponent ? window.getChatComponent() : null);
+                    }, 50);
                 }
             });
         })();
