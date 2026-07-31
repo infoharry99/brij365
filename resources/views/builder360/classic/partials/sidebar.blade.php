@@ -296,18 +296,37 @@
     .b360-profile-popover form:last-child button:hover i { color: var(--sb-danger); }
     body.sidebar-collapsed .b360-profile-popover { display: none; }
 
-    /* Tooltip (created by JS) */
+    /* Tooltip (for collapsed sidebar icons) */
     .b360-sb-tooltip {
         position: fixed;
-        background: #1E293B; color: #F1F5F9;
-        font-size: 12px; font-weight: 600;
+        background: #0F172A;
+        color: #F8FAFC;
+        font-size: 12px;
+        font-weight: 600;
         font-family: var(--sb-font);
-        padding: 5px 10px; border-radius: var(--sb-r-sm);
-        white-space: nowrap; pointer-events: none;
-        z-index: 9999; box-shadow: 0 4px 14px rgba(0,0,0,.18);
-        opacity: 0; transition: opacity .12s;
+        padding: 6px 12px;
+        border-radius: 6px;
+        white-space: nowrap;
+        pointer-events: none;
+        z-index: 99999;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity .15s ease, visibility .15s ease;
     }
-    .b360-sb-tooltip.is-visible { opacity: 1; }
+    .b360-sb-tooltip.is-visible {
+        opacity: 1;
+        visibility: visible;
+    }
+    .b360-sb-tooltip::before {
+        content: '';
+        position: absolute;
+        right: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 5px solid transparent;
+        border-right-color: #0F172A;
+    }
 
     /* Mobile */
     @media (max-width: 768px) {
@@ -494,43 +513,65 @@
 
 </aside>
 
-{{-- Retired legacy sidebar script. The CSP-safe builderShell in resources/js/app.js is authoritative.
-@push('scripts')
-
 <script>
-(function () {
-    var sidebar = document.getElementById('b360Sidebar');
-    if (!sidebar) return;
+    (function () {
+        function initSidebarTooltip() {
+            var tooltip = document.getElementById('b360-sb-tooltip');
+            if (! tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.id = 'b360-sb-tooltip';
+                tooltip.className = 'b360-sb-tooltip';
+                tooltip.setAttribute('role', 'tooltip');
+                document.body.appendChild(tooltip);
+            }
 
-    var tooltip = document.createElement('div');
-    tooltip.className = 'b360-sb-tooltip';
-    tooltip.setAttribute('role', 'tooltip');
-    document.body.appendChild(tooltip);
+            function hideTooltip() {
+                if (tooltip) {
+                    tooltip.classList.remove('is-visible');
+                }
+            }
 
-    sidebar.querySelectorAll('.b360-nav-link').forEach(function (link) {
-        link.addEventListener('mouseenter', function () {
-            if (!document.body.classList.contains('sidebar-collapsed')) return;
-            var label = link.getAttribute('data-label');
-            if (!label) return;
-            var r = link.getBoundingClientRect();
-            tooltip.textContent     = label;
-            tooltip.style.top       = Math.round(r.top + r.height / 2) + 'px';
-            tooltip.style.left      = Math.round(r.right + 10) + 'px';
-            tooltip.style.transform = 'translateY(-50%)';
-            tooltip.classList.add('is-visible');
-        });
-        link.addEventListener('mouseleave', function () {
-            tooltip.classList.remove('is-visible');
-        });
-    });
+            document.addEventListener('mouseover', function (e) {
+                var link = e.target && e.target.closest ? e.target.closest('.b360-sidebar .b360-nav-link[data-label], .sidebar .blade-sidebar-link[data-label], [data-sidebar-tooltip][data-label]') : null;
+                if (! link) return;
 
-    /* Hide tooltip when sidebar expands */
-    new MutationObserver(function () {
-        if (!document.body.classList.contains('sidebar-collapsed')) {
-            tooltip.classList.remove('is-visible');
+                var sidebar = document.getElementById('b360Sidebar') || document.querySelector('.b360-sidebar, .sidebar');
+                var isCollapsed = document.body.classList.contains('sidebar-collapsed') ||
+                                  (sidebar && (sidebar.classList.contains('is-collapsed') || sidebar.classList.contains('collapsed')));
+
+                if (! isCollapsed || window.innerWidth <= 768) {
+                    hideTooltip();
+                    return;
+                }
+
+                var label = link.getAttribute('data-label');
+                if (! label) return;
+
+                var r = link.getBoundingClientRect();
+                tooltip.textContent = label;
+                tooltip.style.top = Math.round(r.top + r.height / 2) + 'px';
+                tooltip.style.left = Math.round(r.right + 10) + 'px';
+                tooltip.style.transform = 'translateY(-50%)';
+                tooltip.classList.add('is-visible');
+            });
+
+            document.addEventListener('mouseout', function (e) {
+                var link = e.target && e.target.closest ? e.target.closest('.b360-sidebar .b360-nav-link[data-label], .sidebar .blade-sidebar-link[data-label], [data-sidebar-tooltip][data-label]') : null;
+                if (link) {
+                    hideTooltip();
+                }
+            });
+
+            document.addEventListener('scroll', hideTooltip, true);
         }
-    }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
-})();
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initSidebarTooltip);
+        } else {
+            initSidebarTooltip();
+        }
+    })();
+</script>
 function retiredSidebarController() {
     return {
 

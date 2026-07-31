@@ -44,12 +44,12 @@
                     @endphp
 
                     @if ($url)
-                        <a href="{{ $url }}" class="{{ $isActive ? 'blade-sidebar-link is-active' : 'blade-sidebar-link nav-item' }}" @if ($isActive) aria-current="page" @endif>
+                        <a href="{{ $url }}" class="{{ $isActive ? 'blade-sidebar-link is-active' : 'blade-sidebar-link nav-item' }}" @if ($isActive) aria-current="page" @endif data-label="{{ $moduleName }}">
                             <span class="ni-ic" aria-hidden="true">{{ $moduleInitial }}</span>
                             <span class="nav-label">{{ $moduleName }}</span>
                         </a>
                     @else
-                        <span class="nav-item blade-sidebar-link is-disabled" aria-disabled="true">
+                        <span class="nav-item blade-sidebar-link is-disabled" aria-disabled="true" data-label="{{ $moduleName }}">
                             <span class="ni-ic" aria-hidden="true">{{ $moduleInitial }}</span>
                             <span class="nav-label">{{ $moduleName }}</span>
                         </span>
