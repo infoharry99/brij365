@@ -63,20 +63,12 @@
                 </span>
             @endif
             @php
-                $cardAssignees = $task->assignees->isNotEmpty() ? $task->assignees : collect(array_filter([$task->assignedTo]));
+                $taskCreator = $task->createdBy ?? $task->assignedTo ?? $task->assignees->first();
+                $creatorName = $taskCreator?->name ?? 'Unassigned';
             @endphp
-            <div style="display:flex; align-items:center; gap:2px;">
-                @forelse($cardAssignees->take(3) as $cardAssignee)
-                    <span class="tm-card-owner" title="{{ $cardAssignee->name }}">
-                        <img src="https://build365.arinine.com/owner.png" alt="Task Owner"style="height: 25px;">
-                    </span>
-
-                @empty
-                    <span class="tm-card-owner" title="Unassigned">U</span>
-                @endforelse
-                @if($cardAssignees->count() > 3)
-                    <small style="font-size:10px; font-weight:700; color:var(--tm-text-muted);">+{{ $cardAssignees->count() - 3 }}</small>
-                @endif
+            <div style="display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:#475569;" title="{{ $creatorName }}">
+                <img src="https://build365.arinine.com/owner.png" alt="{{ $creatorName }}" style="height:22px; width:22px; object-fit:contain; flex-shrink:0;">
+                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px;">{{ $creatorName }}</span>
             </div>
         </footer>
     </a>
