@@ -1507,23 +1507,12 @@ Alpine.data('chatRealtime', () => ({
     selectedAttachments: [],
     mentionMatchCount: 0,
     mentionTriggerStart: null,
-    replyTarget: null,
     typingUsers: [],
     isTypingSelf: false,
     typingStopTimer: null,
     typingDebounceTimer: null,
-
-    get typingIndicatorText() {
-        const names = (this.typingUsers || []).map(u => u.name);
-        if (names.length === 0) return '';
-        if (names.length === 1) return `${names[0]} is typing…`;
-        if (names.length === 2) return `${names[0]} and ${names[1]} are typing…`;
-        return 'Several people are typing…';
-    },
-
-    get hasTypingUsers() {
-        return (this.typingUsers || []).length > 0;
-    },
+    typingIndicatorText: '',
+    hasTypingUsers: false,
 
     get hasSelectedAttachments() {
         return this.selectedAttachments.length > 0;
@@ -1734,6 +1723,7 @@ Alpine.data('chatRealtime', () => ({
         } else {
             this.removeTypingUser(userId);
         }
+        this.updateTypingSummary();
     },
 
     removeTypingUser(userId) {
@@ -1743,6 +1733,22 @@ Alpine.data('chatRealtime', () => ({
                 window.clearTimeout(this.typingUsers[index].timer);
             }
             this.typingUsers.splice(index, 1);
+        }
+        this.updateTypingSummary();
+    },
+
+    updateTypingSummary() {
+        const names = (this.typingUsers || []).map((u) => u.name);
+        this.hasTypingUsers = names.length > 0;
+
+        if (names.length === 0) {
+            this.typingIndicatorText = '';
+        } else if (names.length === 1) {
+            this.typingIndicatorText = `${names[0]} is typing…`;
+        } else if (names.length === 2) {
+            this.typingIndicatorText = `${names[0]} and ${names[1]} are typing…`;
+        } else {
+            this.typingIndicatorText = 'Several people are typing…';
         }
     },
 
