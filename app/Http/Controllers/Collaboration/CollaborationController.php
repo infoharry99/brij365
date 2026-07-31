@@ -113,6 +113,7 @@ use App\Models\CollaborationMessage;
 use App\Models\WorkTask;
 use App\Models\WorkTaskSubtask;
 use App\Models\WorkTaskTransferRequest;
+use App\Models\User;
 use App\Services\Collaboration\CollaborationService;
 use App\Services\Collaboration\ChatConnectService;
 use Illuminate\Foundation\Http\FormRequest;
