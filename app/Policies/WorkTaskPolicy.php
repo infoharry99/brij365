@@ -22,15 +22,24 @@ class WorkTaskPolicy
             return false;
         }
 
-        if ($user->isDirector()) {
+        if ($user->isDirector() || $user->hasPermission('collaboration.view') || $user->hasPermission('collaboration.manage')) {
             return true;
         }
 
         $watcherIds = collect(data_get($workTask->metadata, 'watcher_user_ids', []))->map(fn ($id) => (int) $id);
+        $assigneeIds = $workTask->relationLoaded('assignees')
+            ? $workTask->assignees->pluck('id')->map(fn ($id) => (int) $id)
+            : \Illuminate\Support\Facades\DB::table('work_task_assignees')->where('work_task_id', $workTask->id)->pluck('user_id')->map(fn ($id) => (int) $id);
+
+        $commentMentionedIds = $workTask->relationLoaded('comments')
+            ? $workTask->comments->pluck('mentions')->flatten()->filter()->map(fn ($id) => (int) $id)
+            : \Illuminate\Support\Facades\DB::table('work_task_comments')->where('work_task_id', $workTask->id)->whereNotNull('mentions')->pluck('mentions')->map(fn ($m) => json_decode($m, true))->flatten()->filter()->map(fn ($id) => (int) $id);
 
         return (int) $workTask->created_by_user_id === (int) $user->id
             || (int) $workTask->assigned_to_user_id === (int) $user->id
-            || $watcherIds->contains((int) $user->id);
+            || $watcherIds->contains((int) $user->id)
+            || $assigneeIds->contains((int) $user->id)
+            || $commentMentionedIds->contains((int) $user->id);
     }
 
     public function create(User $user): bool
@@ -52,7 +61,7 @@ class WorkTaskPolicy
             return false;
         }
 
-        if ($user->isDirector()) {
+        if ($user->isDirector() || $user->hasPermission('collaboration.manage')) {
             return true;
         }
 
@@ -75,14 +84,18 @@ class WorkTaskPolicy
             return false;
         }
 
-        if ($user->isDirector()) {
+        if ($user->isDirector() || $user->hasPermission('collaboration.manage')) {
             return true;
         }
 
         $watcherIds = collect(data_get($workTask->metadata, 'watcher_user_ids', []))->map(fn ($id) => (int) $id);
+        $assigneeIds = $workTask->relationLoaded('assignees')
+            ? $workTask->assignees->pluck('id')->map(fn ($id) => (int) $id)
+            : \Illuminate\Support\Facades\DB::table('work_task_assignees')->where('work_task_id', $workTask->id)->pluck('user_id')->map(fn ($id) => (int) $id);
 
         return (int) $workTask->created_by_user_id === (int) $user->id
             || (int) $workTask->assigned_to_user_id === (int) $user->id
+            || $assigneeIds->contains((int) $user->id)
             || $watcherIds->contains((int) $user->id);
     }
 
