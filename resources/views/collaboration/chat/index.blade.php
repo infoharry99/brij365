@@ -713,9 +713,9 @@
                 @if ($canPost)
                     <footer class="b360-thread-composer">
                         <div class="b360-composer-stack">
-                            <form method="POST" action="{{ route('collaboration.chat.conversations.messages.store', $selectedConversation) }}" enctype="multipart/form-data" class="b360-composer-box" x-ref="composer" x-on:submit.prevent="sendMessage" x-on:paste="handlePaste($event)" onpaste="window.handlePaste ? window.handlePaste(event) : null">
+                            <form method="POST" action="{{ route('collaboration.chat.conversations.messages.store', $selectedConversation) }}" enctype="multipart/form-data" class="b360-composer-box" x-ref="composer" x-on:submit.prevent="sendMessage" onpaste="window.handlePaste ? window.handlePaste(event) : null">
                                 @csrf
-                                <textarea name="body" maxlength="10000" placeholder="Write a message…" aria-label="Message" x-on:input="handleComposerInput" x-on:keydown.enter="handleComposerKeydown" x-on:paste="handlePaste($event)" onpaste="window.handlePaste ? window.handlePaste(event) : null" x-bind:disabled="busy"></textarea>
+                                <textarea name="body" maxlength="10000" placeholder="Write a message…" aria-label="Message" x-on:input="handleComposerInput" x-on:keydown.enter="handleComposerKeydown" onpaste="window.handlePaste ? window.handlePaste(event) : null" x-bind:disabled="busy"></textarea>
                                 <div class="b360-chat-attachment-selection" x-show="hasSelectedAttachments" x-cloak aria-label="Selected attachments">
                                     <template x-for="attachment in selectedAttachments" x-bind:key="attachment.key">
                                         <span class="b360-chat-selected-file">
@@ -805,13 +805,108 @@
         </section>
     </section>
     <script>
-        document.addEventListener('paste', function(event) {
-            const target = event.target;
-            if (target && (target.tagName === 'TEXTAREA' || target.closest?.('.b360-composer-box'))) {
-                if (window.handlePaste) {
+        (function() {
+            window.handlePaste = function(event) {
+                const clipboard = event?.clipboardData || window.clipboardData;
+                if (! clipboard) return;
+
+                const files = [];
+                const seenKeys = new Set();
+
+                if (clipboard.items && clipboard.items.length > 0) {
+                    Array.from(clipboard.items).forEach(function(item) {
+                        if (item.type && item.type.startsWith('image/')) {
+                            try {
+                                const file = item.getAsFile();
+                                if (file) {
+                                    const key = (file.name || 'image') + '-' + (file.size || 0);
+                                    if (! seenKeys.has(key)) {
+                                        files.push(file);
+                                        seenKeys.add(key);
+                                    }
+                                }
+                            } catch (_e) {}
+                        }
+                    });
+                }
+
+                if (clipboard.files && clipboard.files.length > 0) {
+                    Array.from(clipboard.files).forEach(function(file) {
+                        const isImg = file.type ? file.type.startsWith('image/') : /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name || '');
+                        if (isImg) {
+                            const key = (file.name || 'image') + '-' + (file.size || 0);
+                            if (! seenKeys.has(key)) {
+                                files.push(file);
+                                seenKeys.add(key);
+                            }
+                        }
+                    });
+                }
+
+                if (files.length === 0) return;
+
+                if (event && typeof event.preventDefault === 'function') {
+                    event.preventDefault();
+                }
+
+                const target = event.target || event.currentTarget;
+                const composer = target?.closest?.('.b360-composer-box') || document.querySelector('.b360-composer-box');
+                if (! composer) return;
+
+                let input = composer.querySelector('input[type="file"][name="attachments[]"]');
+                if (! input) {
+                    input = document.createElement('input');
+                    input.type = 'file';
+                    input.name = 'attachments[]';
+                    input.multiple = true;
+                    input.hidden = true;
+                    composer.appendChild(input);
+                }
+
+                if (typeof DataTransfer === 'undefined') return;
+
+                const transfer = new DataTransfer();
+                Array.from(input.files || []).forEach(function(f) { transfer.items.add(f); });
+
+                let addedCount = 0;
+                files.forEach(function(file, idx) {
+                    const rawExt = file.type ? file.type.split('/')[1] : 'png';
+                    const ext = rawExt ? rawExt.replace('+xml', '').replace('svg', 'png').replace('jpeg', 'jpg') : 'png';
+                    const filename = (file.name && file.name !== 'image.png' && file.name !== 'blob')
+                        ? file.name
+                        : 'pasted-image-' + Date.now() + '-' + (idx + 1) + '.' + ext;
+
+                    const renamedFile = new File([file], filename, { type: file.type || 'image/png' });
+                    transfer.items.add(renamedFile);
+                    addedCount++;
+                });
+
+                if (addedCount > 0) {
+                    input.files = transfer.files;
+                    const chat = window.getChatComponent ? window.getChatComponent() : null;
+                    if (chat && typeof chat.syncSelectedAttachments === 'function') {
+                        chat.syncSelectedAttachments(transfer.files);
+                    } else if (chat && Array.isArray(chat.selectedAttachments)) {
+                        chat.selectedAttachments = Array.from(transfer.files).map(function(file, index) {
+                            return {
+                                file: file,
+                                name: file.name,
+                                size: file.size,
+                                type: file.type,
+                                preview: file.type && file.type.startsWith('image/') && typeof URL !== 'undefined' ? URL.createObjectURL(file) : null,
+                                key: file.name + '-' + file.size + '-' + (file.lastModified || Date.now()) + '-' + index,
+                            };
+                        });
+                    }
+                }
+            };
+
+            document.addEventListener('paste', function(event) {
+                const target = event.target;
+                if (target && (target.tagName === 'TEXTAREA' || (target.closest && target.closest('.b360-composer-box')))) {
                     window.handlePaste(event);
                 }
-            }
-        });
+            });
+        })();
     </script>
 @endsection
