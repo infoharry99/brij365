@@ -1,11 +1,37 @@
 <div class="b360-thread-timeline" x-ref="timeline" aria-live="polite" x-on:click="handleTimelineClick($event)" onclick="if (window.handleTimelineClick) window.handleTimelineClick(event);">
+    @php
+        $lastDateLabel = null;
+    @endphp
     @forelse ($chatMessages as $message)
         @php
             $isMine = (int) $message->sender_user_id === (int) auth()->id();
             $reactionGroups = $message->reactions->groupBy('emoji');
             $otherReads = $message->reads->where('user_id', '!=', auth()->id());
             $allRead = $otherReads->isNotEmpty() && $otherReads->every(fn ($read) => $read->read_at !== null);
+
+            $currentDateStr = $message->created_at ? $message->created_at->format('Y-m-d') : null;
         @endphp
+
+        @if ($message->created_at && $currentDateStr !== $lastDateLabel)
+            @php
+                $lastDateLabel = $currentDateStr;
+                $dateObj = $message->created_at;
+                if ($dateObj->isToday()) {
+                    $dateText = 'Today';
+                } elseif ($dateObj->isYesterday()) {
+                    $dateText = 'Yesterday';
+                } elseif ($dateObj->greaterThanOrEqualTo(now()->startOfDay()->subDays(6))) {
+                    $dateText = $dateObj->format('l');
+                } elseif ($dateObj->isCurrentYear()) {
+                    $dateText = $dateObj->format('F j, Y');
+                } else {
+                    $dateText = $dateObj->format('F j, Y');
+                }
+            @endphp
+            <div class="b360-chat-date-separator">
+                <span>{{ $dateText }}</span>
+            </div>
+        @endif
         <article class="b360-thread-message {{ $isMine ? 'is-mine' : '' }}" data-message-id="{{ $message->id }}">
             <x-ui.user-avatar :user="$message->sender" :label="$message->sender?->name ?? 'System'" class="b360-message-avatar" />
             <div class="b360-message-content">

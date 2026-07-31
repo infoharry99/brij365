@@ -462,6 +462,37 @@
         .b360-ai-btn:active {
             transform: translateY(0);
         }
+        .b360-chat-date-separator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 18px 0 14px 0;
+            position: relative;
+            width: 100%;
+        }
+        .b360-chat-date-separator::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 1px;
+            background: #E2E8F0;
+            z-index: 1;
+        }
+        .b360-chat-date-separator span {
+            position: relative;
+            z-index: 2;
+            background: #FFFFFF;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 14px;
+            border-radius: 12px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            letter-spacing: 0.2px;
+        }
 </style>
 @section('content')
     <section
