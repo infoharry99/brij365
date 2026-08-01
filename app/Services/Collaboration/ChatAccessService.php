@@ -53,6 +53,15 @@ class ChatAccessService
 
     public function can(User $user, string $capability): bool
     {
+        if ($user->isDirector() || $user->hasPermission('*') || $user->hasPermission('collaboration.manage')) {
+            return $capability === 'read_only' ? false : true;
+        }
+
+        if ($capability === 'can_voice' || $capability === 'can_send_voice') {
+            $caps = $this->capabilitiesFor($user);
+            return (bool) ($caps['can_send_voice'] ?? $caps['can_voice'] ?? true);
+        }
+
         return (bool) ($this->capabilitiesFor($user)[$capability] ?? false);
     }
 
@@ -80,6 +89,7 @@ class ChatAccessService
             'can_create_channel'  => true,
             'can_upload'          => true,
             'can_send_voice'      => true,
+            'can_voice'           => true,
             'can_create_poll'     => true,
             'can_vote_poll'       => true,
             'can_manage_members'  => true,
@@ -95,7 +105,8 @@ class ChatAccessService
             'can_create_group'    => true,
             'can_create_channel'  => false,
             'can_upload'          => true,
-            'can_send_voice'      => false,
+            'can_send_voice'      => true,
+            'can_voice'           => true,
             'can_create_poll'     => false,
             'can_vote_poll'       => true,
             'can_manage_members'  => false,
