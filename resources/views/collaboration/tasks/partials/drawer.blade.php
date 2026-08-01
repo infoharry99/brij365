@@ -296,17 +296,19 @@
                 @empty
                     <b class="tm-person-line"><span class="tm-card-owner">U</span>Unassigned</b>
                 @endforelse
-                <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+                <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:8px;">
                     @can('assign',$selectedTask)
-                        <button class="tm-assignee-add" type="button" x-on:click="toggleAssignee" x-bind:aria-expanded="assigneeOpen.toString()" title="Add / Manage Assignees" aria-label="Add or manage assignees" style="display:inline-flex; align-items:center; gap:4px; padding:3px 8px; font-size:11px; font-weight:600; background:#EEF2FF; color:#4F46E5; border:1px solid #C7D2FE; border-radius:6px; cursor:pointer;">
-                            <i class="fa-solid fa-user-plus"></i> Add / Manage
+                        <button type="button" x-on:click="toggleAssignee" x-bind:aria-expanded="assigneeOpen.toString()" title="Add or manage assignees" aria-label="Add or manage assignees" style="display:inline-flex; align-items:center; gap:5px; background:#EEF2FF; color:#4F46E5; border:1px solid #C7D2FE; border-radius:6px; padding:4px 10px; font-size:11.5px; font-weight:600; cursor:pointer; line-height:1.2; transition:all .15s ease;" onmouseenter="this.style.background='#E0E7FF';" onmouseleave="this.style.background='#EEF2FF';">
+                            <i class="fa-solid fa-user-plus" style="font-size:11px;"></i> Assignees
                         </button>
                     @endcan
                     @if($pendingTransfer)
-                        <small class="tm-transfer-pending">Transfer pending approval</small>
+                        <small style="font-size:11px; color:#D97706; font-weight:600;">Transfer pending</small>
                     @elseif($selectedTask->assigned_to_user_id)
                         @can('requestTransfer',$selectedTask)
-                            <button class="tm-assignee-add" type="button" x-on:click="openTransfer" title="Transfer primary ownership" aria-label="Transfer to another assignee"><i class="fa-solid fa-right-left"></i></button>
+                            <button type="button" x-on:click="openTransfer" title="Transfer primary ownership" aria-label="Transfer to another assignee" style="display:inline-flex; align-items:center; gap:5px; background:#F1F5F9; color:#475569; border:1px solid #CBD5E1; border-radius:6px; padding:4px 10px; font-size:11.5px; font-weight:600; cursor:pointer; line-height:1.2; transition:all .15s ease;" onmouseenter="this.style.background='#E2E8F0';" onmouseleave="this.style.background='#F1F5F9';">
+                                <i class="fa-solid fa-right-left" style="font-size:11px; color:#6366F1;"></i> Transfer
+                            </button>
                         @endcan
                     @endif
                 </div>
