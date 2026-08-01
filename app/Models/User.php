@@ -110,6 +110,6 @@ class User extends Authenticatable implements MustVerifyEmail
             return null;
         }
 
-        return route('builder360.profile-photo.show', $this);
+        return asset('storage/'.$this->profile_photo_path);
     }
 }
