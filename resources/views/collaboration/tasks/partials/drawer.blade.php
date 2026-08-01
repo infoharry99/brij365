@@ -125,7 +125,7 @@
                     </div>
 
                     @can('comment',$selectedTask)
-                        <form method="POST" action="{{ route('collaboration.tasks.comments.store',$selectedTask) }}" class="tm-comment-form-redesign" x-data="{ open: false, query: '', triggerStart: null, noMatches: false, input() { const body = this.$refs.body; if (! body) return; const value = body.value; const caret = body.selectionStart; const match = value.slice(0, caret).match(/(^|\s)@([^\s@]*)$/); if (! match) { this.close(); return; } this.triggerStart = caret - match[2].length - 1; this.query = match[2].toLowerCase(); this.open = true; this.filter(); }, show() { this.triggerStart = this.$refs.body?.selectionStart ?? 0; this.query = ''; this.open = true; this.filter(); this.$nextTick(() => { (this.$refs.mentionSearch || this.$refs.body)?.focus(); }); }, filter() { const q = String(this.query || '').trim().toLowerCase(); let visibleCount = 0; const rootEl = this.$el || document; rootEl.querySelectorAll('[data-task-mention-option]').forEach((row) => { const searchable = String(row.dataset.personSearch || '').toLowerCase(); const matches = q === '' || searchable.includes(q); row.hidden = ! matches; row.style.display = matches ? 'flex' : 'none'; if (matches) visibleCount++; }); this.noMatches = visibleCount === 0; }, select(event) { const button = event.currentTarget; const name = button.dataset.personName; const id = button.dataset.personId; const body = this.$refs.body; if (! body) return; const start = this.triggerStart ?? body.selectionStart; const end = body.selectionStart; body.value = `${body.value.slice(0, start)}@${name} ${body.value.slice(end)}`; const rootEl = this.$el || document; const checkbox = rootEl.querySelector('[data-mention-id=\'' + id + '\']'); if (checkbox) checkbox.checked = true; this.close(); this.$nextTick(() => { body.focus(); body.selectionStart = body.selectionEnd = start + name.length + 2; }); }, close() { this.open = false; this.query = ''; this.triggerStart = null; this.noMatches = false; } }" x-on:click.outside="close" style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:12px; padding:14px; box-shadow:0 2px 6px rgba(0,0,0,0.03); display:flex; flex-direction:column; gap:10px; position:relative;">
+                        <form method="POST" action="{{ route('collaboration.tasks.comments.store',$selectedTask) }}" class="tm-comment-form-redesign" x-data="taskMentionComposer" x-on:click.outside="close" style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:12px; padding:14px; box-shadow:0 2px 6px rgba(0,0,0,0.03); display:flex; flex-direction:column; gap:10px; position:relative;">
                             @csrf
                             <label style="font-size:12px; font-weight:700; color:#475569; display:flex; align-items:center; justify-content:space-between;">
                                 <span>Write a comment</span>
@@ -169,6 +169,94 @@
                                 </button>
                             </div>
                         </form>
+                        <script>
+                        (function() {
+                            function registerTaskMentionComposer() {
+                                if (typeof window.Alpine !== 'undefined' && typeof window.Alpine.data === 'function') {
+                                    window.Alpine.data('taskMentionComposer', function() {
+                                        return {
+                                            open: false,
+                                            query: '',
+                                            triggerStart: null,
+                                            noMatches: false,
+                                            input: function() {
+                                                var body = this.$refs.body;
+                                                if (! body) return;
+                                                var value = body.value;
+                                                var caret = body.selectionStart;
+                                                var match = value.slice(0, caret).match(/(^|\s)@([^\s@]*)$/);
+                                                if (! match) {
+                                                    this.close();
+                                                    return;
+                                                }
+                                                this.triggerStart = caret - match[2].length - 1;
+                                                this.query = match[2].toLowerCase();
+                                                this.open = true;
+                                                this.filter();
+                                            },
+                                            show: function() {
+                                                this.triggerStart = this.$refs.body ? this.$refs.body.selectionStart : 0;
+                                                this.query = '';
+                                                this.open = true;
+                                                this.filter();
+                                                var self = this;
+                                                this.$nextTick(function() {
+                                                    if (self.$refs.mentionSearch) {
+                                                        self.$refs.mentionSearch.focus();
+                                                    } else if (self.$refs.body) {
+                                                        self.$refs.body.focus();
+                                                    }
+                                                });
+                                            },
+                                            filter: function() {
+                                                var q = String(this.query || '').trim().toLowerCase();
+                                                var visibleCount = 0;
+                                                var rootEl = this.$el || document;
+                                                var rows = rootEl.querySelectorAll('[data-task-mention-option]');
+                                                rows.forEach(function(row) {
+                                                    var searchable = String(row.dataset.personSearch || '').toLowerCase();
+                                                    var matches = (q === '' || searchable.indexOf(q) !== -1);
+                                                    row.hidden = ! matches;
+                                                    row.style.display = matches ? 'flex' : 'none';
+                                                    if (matches) visibleCount++;
+                                                });
+                                                this.noMatches = (visibleCount === 0);
+                                            },
+                                            select: function(event) {
+                                                var button = event.currentTarget;
+                                                var name = button.dataset.personName;
+                                                var id = button.dataset.personId;
+                                                var body = this.$refs.body;
+                                                if (! body) return;
+                                                var start = (this.triggerStart !== null && this.triggerStart !== undefined) ? this.triggerStart : body.selectionStart;
+                                                var end = body.selectionStart;
+                                                body.value = body.value.slice(0, start) + '@' + name + ' ' + body.value.slice(end);
+                                                var rootEl = this.$el || document;
+                                                var checkbox = rootEl.querySelector('[data-mention-id="' + id + '"]');
+                                                if (checkbox) checkbox.checked = true;
+                                                this.close();
+                                                this.$nextTick(function() {
+                                                    body.focus();
+                                                    body.selectionStart = body.selectionEnd = start + name.length + 2;
+                                                });
+                                            },
+                                            close: function() {
+                                                this.open = false;
+                                                this.query = '';
+                                                this.triggerStart = null;
+                                                this.noMatches = false;
+                                            }
+                                        };
+                                    });
+                                }
+                            }
+                            if (window.Alpine) {
+                                registerTaskMentionComposer();
+                            } else {
+                                document.addEventListener('alpine:init', registerTaskMentionComposer);
+                            }
+                        })();
+                        </script>
                     @endcan
                 </div>
             </section>
