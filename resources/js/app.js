@@ -1460,7 +1460,6 @@ Alpine.data('taskMentionComposer', () => ({
         const caret = body.selectionStart;
         const match = value.slice(0, caret).match(/(^|\s)@([^\s@]*)$/);
         if (! match) { this.close(); return; }
-        const leadingSpaceLen = match[1].length;
         this.triggerStart = caret - match[2].length - 1;
         this.query = match[2].toLowerCase();
         this.open = true;
@@ -1471,12 +1470,15 @@ Alpine.data('taskMentionComposer', () => ({
         this.query = '';
         this.open = true;
         this.filter();
-        this.$nextTick(() => this.$refs.body?.focus());
+        this.$nextTick(() => {
+            this.$refs.mentionSearch?.focus() || this.$refs.body?.focus();
+        });
     },
     filter() {
         const q = String(this.query || '').trim().toLowerCase();
         let visibleCount = 0;
-        this.$root.querySelectorAll('[data-task-mention-option]').forEach((row) => {
+        const rootEl = this.$root || document;
+        rootEl.querySelectorAll('[data-task-mention-option]').forEach((row) => {
             const searchable = String(row.dataset.personSearch || '').toLowerCase();
             const matches = q === '' || searchable.includes(q);
             row.hidden = ! matches;
@@ -1484,6 +1486,9 @@ Alpine.data('taskMentionComposer', () => ({
             if (matches) visibleCount++;
         });
         this.noMatches = visibleCount === 0;
+    },
+    hasNoMatches() {
+        return Boolean(this.noMatches);
     },
     select(event) {
         const button = event.currentTarget;
@@ -1494,10 +1499,14 @@ Alpine.data('taskMentionComposer', () => ({
         const start = this.triggerStart ?? body.selectionStart;
         const end = body.selectionStart;
         body.value = `${body.value.slice(0, start)}@${name} ${body.value.slice(end)}`;
-        const checkbox = this.$root.querySelector(`[data-mention-id="${id}"]`);
+        const rootEl = this.$root || document;
+        const checkbox = rootEl.querySelector(`[data-mention-id="${id}"]`);
         if (checkbox) checkbox.checked = true;
         this.close();
-        this.$nextTick(() => { body.focus(); body.selectionStart = body.selectionEnd = start + name.length + 2; });
+        this.$nextTick(() => {
+            body.focus();
+            body.selectionStart = body.selectionEnd = start + name.length + 2;
+        });
     },
     close() {
         this.open = false;

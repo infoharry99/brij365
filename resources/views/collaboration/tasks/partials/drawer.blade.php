@@ -140,13 +140,13 @@
                                             <b style="font-size:12px; color:#1E293B;">Mention a teammate</b>
                                             <small style="font-size:10px; color:#64748B;" x-text="query ? 'Filtering: &quot;'+query+'&quot;' : 'All teammates'"></small>
                                         </div>
-                                        <input type="search" x-model="query" x-on:input="filter" placeholder="Search teammate name or role..." style="width:100%; padding:5px 8px; font-size:11.5px; border:1px solid #CBD5E1; border-radius:6px; outline:none; font-family:inherit;" x-on:keydown.escape="close">
+                                        <input type="search" x-ref="mentionSearch" x-model="query" x-on:input="filter" placeholder="Search teammate name or role..." style="width:100%; padding:5px 8px; font-size:11.5px; border:1px solid #CBD5E1; border-radius:6px; outline:none; font-family:inherit;" x-on:keydown.escape="close">
                                     </header>
                                     <div class="tm-mention-list" style="display:flex; flex-direction:column; gap:4px;">
                                         @foreach($users as $userOption)
                                             @php
                                                 $emailPrefix = strstr($userOption->email, '@', true) ?: $userOption->email;
-                                                $searchKeywords = strtolower($userOption->name.' '.$emailPrefix.' '.($userOption->role?->name ?? '').' '.($userOption->employee?->department ?? ''));
+                                                $searchKeywords = strtolower(trim($userOption->name.' '.$emailPrefix.' '.($userOption->role?->name ?? '').' '.($userOption->employee?->department ?? '')));
                                             @endphp
                                             <button type="button" data-task-mention-option data-person-id="{{ $userOption->id }}" data-person-name="{{ $userOption->name }}" data-person-search="{{ $searchKeywords }}" x-on:click="select" style="display:flex; align-items:center; gap:8px; padding:6px 8px; border:none; background:transparent; border-radius:6px; cursor:pointer; text-align:left; width:100%;" onmouseenter="this.style.background='#F1F5F9';" onmouseleave="this.style.background='transparent';">
                                                 <span style="display:flex; flex-direction:column; min-width:0;">
@@ -156,7 +156,7 @@
                                             </button>
                                             <input type="checkbox" hidden data-mention-id="{{ $userOption->id }}" name="mentions[]" value="{{ $userOption->id }}">
                                         @endforeach
-                                        <p x-show="noMatches" x-cloak style="font-size:11.5px; color:#64748B; text-align:center; padding:12px 6px; margin:0;">No matching teammates found.</p>
+                                        <p x-show="hasNoMatches()" x-cloak style="font-size:11.5px; color:#64748B; text-align:center; padding:12px 6px; margin:0;">No matching teammates found.</p>
                                     </div>
                                 </div>
                             </div>
