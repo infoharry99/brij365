@@ -80,7 +80,7 @@ class StoreCollaborationMessageRequest extends FormRequest
                         $validator->errors()->add('recipient_user_ids', 'All recipients must be active users.');
                     }
 
-                    if ($recipient->hasPermission('partner.portal') || $recipient->hasPermission('buyer.view')) {
+                    if (! $recipient->isDirector() && ($recipient->hasPermission('partner.portal') || $recipient->hasPermission('buyer.view'))) {
                         $validator->errors()->add('recipient_user_ids', 'Mailbox messages can be sent only to internal users.');
                     }
 

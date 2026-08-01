@@ -27,7 +27,14 @@ final class TaskPeopleCandidates
             ->orderBy('name');
 
         return $query->get()
-            ->reject(fn (User $candidate): bool => $candidate->hasPermission('partner.portal') || $candidate->hasPermission('buyer.view'))
+            ->reject(function (User $candidate): bool {
+                if ($candidate->isDirector()) {
+                    return false;
+                }
+
+                $permissions = $candidate->role?->permissions ?? [];
+                return in_array('partner.portal', $permissions, true) || in_array('buyer.view', $permissions, true);
+            })
             ->values();
     }
 
