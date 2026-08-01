@@ -248,7 +248,10 @@ class ChatApiController extends Controller
         }
 
         /** @var User $user */
+
+
         $user    = $request->user();
+        \Log::info('REQUEST DATA: ' . json_encode($data));
         $command = new ChatCommandData($data, $user, $request);
         $message = $action->execute($conversation, $command);
 
