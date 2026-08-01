@@ -57,7 +57,7 @@ class WorkTaskPolicy
             return false;
         }
 
-        if (! $this->sameCompany($user, $workTask) || $workTask->status === 'completed') {
+        if (! $this->sameCompany($user, $workTask)) {
             return false;
         }
 

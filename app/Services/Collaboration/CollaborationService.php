@@ -421,10 +421,6 @@ class CollaborationService
             $this->authorizeTaskAction($actor, 'assign', $task);
             $this->taskMutations->assertVersion($task, $data['lock_version'] ?? null);
 
-            if ($task->status === 'completed') {
-                throw ValidationException::withMessages(['task' => 'Completed tasks cannot be reassigned.']);
-            }
-
             $userArray = array_filter(array_map('intval', (array) ($data['assigned_to_user_ids'] ?? [])));
             if (empty($userArray) && ! empty($data['assigned_to_user_id'])) {
                 $userArray = [(int) $data['assigned_to_user_id']];
