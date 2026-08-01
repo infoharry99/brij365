@@ -425,45 +425,59 @@ class CollaborationService
                 throw ValidationException::withMessages(['task' => 'Completed tasks cannot be reassigned.']);
             }
 
-            $assignee = User::query()->whereKey($data['assigned_to_user_id'])->firstOrFail();
-            $this->taskPeople->assertEligible($actor, $task, $assignee);
-
-            if ($task->assigned_to_user_id) {
-                if ((int) $task->assigned_to_user_id === (int) $assignee->id) {
-                    throw ValidationException::withMessages(['assigned_to_user_id' => 'This employee is already assigned to the task.']);
-                }
-
-                throw ValidationException::withMessages([
-                    'assigned_to_user_id' => 'Use the transfer workflow to replace the current assignee.',
-                ]);
+            $userArray = array_filter(array_map('intval', (array) ($data['assigned_to_user_ids'] ?? [])));
+            if (empty($userArray) && ! empty($data['assigned_to_user_id'])) {
+                $userArray = [(int) $data['assigned_to_user_id']];
+            }
+            if (empty($userArray) && $task->assigned_to_user_id) {
+                $userArray = [(int) $task->assigned_to_user_id];
             }
 
+            $assignees = User::query()->whereIn('id', array_unique($userArray))->get();
+            if ($assignees->isEmpty()) {
+                throw ValidationException::withMessages(['assigned_to_user_ids' => 'At least one assignee must be selected.']);
+            }
+
+            foreach ($assignees as $assignee) {
+                $this->taskPeople->assertEligible($actor, $task, $assignee);
+            }
+
+            $primaryAssignee = $assignees->first();
+            $names = $assignees->pluck('name')->implode(', ');
+
             $history = $task->workflow_history ?? [];
-            $history[] = $this->workflowEvent('assigned', $actor, $data['note'] ?? "Assigned to {$assignee->name}");
+            $history[] = $this->workflowEvent('assigned', $actor, $data['note'] ?? "Assignees updated: {$names}");
 
             $task->forceFill([
-                'assigned_to_user_id' => $assignee->id,
+                'assigned_to_user_id' => $primaryAssignee->id,
+                'status' => $task->status === 'draft' ? 'open' : $task->status,
                 'workflow_history' => $history,
             ])->save();
+
+            if (Schema::hasTable('work_task_assignees')) {
+                $task->assignees()->sync($assignees->pluck('id')->all());
+            }
 
             $this->auditLogger->record(
                 $actor,
                 'collaboration.task.assigned',
-                'Assigned collaboration task',
+                'Updated task assignees',
                 $task,
-                ['task_number' => $task->task_number, 'assigned_to' => $assignee->email],
+                ['task_number' => $task->task_number, 'assigned_to' => $assignees->pluck('email')->implode(', ')],
                 $request,
             );
 
-            if ($assignee->id !== $actor->id) {
-                $this->notifications->sendToUser($assignee, [
-                    'category' => 'collaboration',
-                    'severity' => $task->priority === 'critical' ? 'critical' : 'info',
-                    'title' => "Task {$task->task_number} assigned",
-                    'body' => $task->title,
-                    'action_url' => '/collaboration/tasks?assigned_to_user_id='.$assignee->id,
-                    'payload' => ['task_number' => $task->task_number, 'priority' => $task->priority],
-                ], $actor, $task);
+            foreach ($assignees as $assignee) {
+                if ($assignee->id !== $actor->id) {
+                    $this->notifications->sendToUser($assignee, [
+                        'category' => 'collaboration',
+                        'severity' => $task->priority === 'critical' ? 'critical' : 'info',
+                        'title' => "Task {$task->task_number} assigned",
+                        'body' => $task->title,
+                        'action_url' => '/collaboration/tasks?assigned_to_user_id='.$assignee->id,
+                        'payload' => ['task_number' => $task->task_number, 'priority' => $task->priority],
+                    ], $actor, $task);
+                }
             }
 
             return $task->load($this->taskRelations());

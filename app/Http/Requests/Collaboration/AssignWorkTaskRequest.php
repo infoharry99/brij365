@@ -22,7 +22,9 @@ class AssignWorkTaskRequest extends FormRequest
     {
         return [
             'lock_version' => ['nullable', 'integer', 'min:1'],
-            'assigned_to_user_id' => ['required', 'integer', 'exists:users,id'],
+            'assigned_to_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'assigned_to_user_ids' => ['nullable', 'array'],
+            'assigned_to_user_ids.*' => ['integer', 'exists:users,id'],
             'note' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -32,10 +34,20 @@ class AssignWorkTaskRequest extends FormRequest
         return [
             function (Validator $validator): void {
                 $task = $this->route('workTask');
-                $assignee = \App\Models\User::query()->whereKey($this->integer('assigned_to_user_id'))->first();
+                $userIds = array_filter(array_map('intval', (array) ($this->input('assigned_to_user_ids') ?? [$this->input('assigned_to_user_id')])));
 
-                if ($task instanceof WorkTask && $assignee && $assignee->company_id !== $task->company_id) {
-                    $validator->errors()->add('assigned_to_user_id', 'The assignee must belong to the task company.');
+                if (empty($userIds)) {
+                    $validator->errors()->add('assigned_to_user_id', 'At least one assignee is required.');
+                    return;
+                }
+
+                $invalidAssignees = \App\Models\User::query()
+                    ->whereIn('id', $userIds)
+                    ->get()
+                    ->filter(fn ($u) => $task instanceof WorkTask && $u->company_id && $task->company_id && $u->company_id !== $task->company_id);
+
+                if ($invalidAssignees->isNotEmpty()) {
+                    $validator->errors()->add('assigned_to_user_id', 'All assignees must belong to the task company.');
                 }
             },
         ];

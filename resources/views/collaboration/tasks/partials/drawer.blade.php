@@ -289,13 +289,27 @@
                 <span>Assignees</span>
                 @php
                     $allAssignees = $selectedTask->assignees->isNotEmpty() ? $selectedTask->assignees : collect(array_filter([$selectedTask->assignedTo]));
+                    $assignedUserIds = $allAssignees->pluck('id')->all();
                 @endphp
                 @forelse($allAssignees as $assigneeUser)
                     <b class="tm-person-line" style="margin-bottom:3px;"><span class="tm-card-owner">{{ strtoupper(substr($assigneeUser->name ?? 'U',0,1)) }}</span>{{ $assigneeUser->name }}</b>
                 @empty
                     <b class="tm-person-line"><span class="tm-card-owner">U</span>Unassigned</b>
                 @endforelse
-                @if($pendingTransfer)<small class="tm-transfer-pending">Transfer pending approval</small>@elseif($selectedTask->assigned_to_user_id)@can('requestTransfer',$selectedTask)<button class="tm-assignee-add" type="button" x-on:click="openTransfer" aria-label="Transfer to another assignee"><i class="fa-solid fa-right-left"></i></button>@endcan @else @can('assign',$selectedTask)<button class="tm-assignee-add" type="button" x-on:click="toggleAssignee" x-bind:aria-expanded="assigneeOpen.toString()" aria-label="Assign task"><i class="fa-solid fa-plus"></i></button>@endcan @endif
+                <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+                    @can('assign',$selectedTask)
+                        <button class="tm-assignee-add" type="button" x-on:click="toggleAssignee" x-bind:aria-expanded="assigneeOpen.toString()" title="Add / Manage Assignees" aria-label="Add or manage assignees" style="display:inline-flex; align-items:center; gap:4px; padding:3px 8px; font-size:11px; font-weight:600; background:#EEF2FF; color:#4F46E5; border:1px solid #C7D2FE; border-radius:6px; cursor:pointer;">
+                            <i class="fa-solid fa-user-plus"></i> Add / Manage
+                        </button>
+                    @endcan
+                    @if($pendingTransfer)
+                        <small class="tm-transfer-pending">Transfer pending approval</small>
+                    @elseif($selectedTask->assigned_to_user_id)
+                        @can('requestTransfer',$selectedTask)
+                            <button class="tm-assignee-add" type="button" x-on:click="openTransfer" title="Transfer primary ownership" aria-label="Transfer to another assignee"><i class="fa-solid fa-right-left"></i></button>
+                        @endcan
+                    @endif
+                </div>
             </div>
             <div class="tm-meta-block"><span>Timeline</span><div class="tm-timeline-meta"><small>Start</small><b>{{ data_get($selectedTask->metadata,'planned_start_at') ? \Illuminate\Support\Carbon::parse(data_get($selectedTask->metadata,'planned_start_at'))->format('d M Y') : $selectedTask->started_at?->format('d M Y') ?? 'Not started' }}</b><small>Due</small><b>{{ $selectedTask->due_at?->format('d M Y, h:i A') ?? 'No due date' }}</b></div></div>
             <div class="tm-meta-block"><span>Project</span><b>{{ $selectedTask->project?->name ?? 'No project' }}</b></div>
@@ -305,21 +319,48 @@
     </div>
 </aside>
 
-@if(!$selectedTask->assigned_to_user_id)
-    @can('assign',$selectedTask)
-        <div class="tm-assignee-overlay" x-show="assigneeOpen" x-cloak x-on:click.outside="assigneeOpen=false" x-data="peopleSearch" role="dialog" aria-modal="true" aria-label="Assign task">
-            <header><div><b>Assign task</b><small>Choose an authorized employee</small></div><button class="tm-iconbtn" type="button" x-on:click="assigneeOpen=false" aria-label="Close assignee picker"><i class="fa-solid fa-xmark"></i></button></header>
-            <label class="tm-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="Search name, email, role or department" x-on:input="filterPeople($event)" oninput="if (window.filterPeople) window.filterPeople(event);" autofocus></label>
-            <div class="tm-people-pop-list">
+@can('assign',$selectedTask)
+    <div class="tm-assignee-overlay" x-show="assigneeOpen" x-cloak x-on:click.outside="assigneeOpen=false" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:340px; max-height:460px; padding:16px; background:#fff; border:1px solid #CBD5E1; border-radius:12px; box-shadow:0 20px 40px rgba(0,0,0,0.2); z-index:9999; display:flex; flex-direction:column; gap:10px;" role="dialog" aria-modal="true" aria-label="Add or manage assignees">
+        <form method="POST" action="{{ route('collaboration.tasks.assign',$selectedTask) }}" style="display:flex; flex-direction:column; gap:10px;">
+            @csrf
+            @method('PATCH')
+            <input type="hidden" name="lock_version" value="{{ $selectedTask->lock_version }}">
+            <header style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <b style="font-size:13px; color:#0F172A;">Manage Task Assignees</b>
+                    <p style="font-size:10.5px; color:#64748B; margin:0;">Select multiple users to assign to this task</p>
+                </div>
+                <button class="tm-iconbtn" type="button" x-on:click="assigneeOpen=false" aria-label="Close assignee picker"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div>
+                <input type="search" placeholder="Search employee name or role..." style="width:100%; padding:6px 8px; font-size:11.5px; border:1px solid #CBD5E1; border-radius:6px; outline:none;" oninput="var q=this.value.toLowerCase().trim(); this.closest('form').querySelectorAll('[data-person-search]').forEach(function(row){ var s=row.getAttribute('data-person-search')||''; var m=!q||s.indexOf(q)!==-1; row.style.display=m?'flex':'none'; });">
+            </div>
+            <div class="tm-people-pop-list" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;">
                 @forelse($users as $userOption)
-                    <form method="POST" action="{{ route('collaboration.tasks.assign',$selectedTask) }}" data-person-search="{{ strtolower($userOption->name.' '.$userOption->email.' '.($userOption->role?->name ?? '').' '.($userOption->employee?->department ?? '')) }}">@csrf @method('PATCH')<input type="hidden" name="lock_version" value="{{ $selectedTask->lock_version }}"><input type="hidden" name="assigned_to_user_id" value="{{ $userOption->id }}"><button type="submit"><span class="tm-card-owner">{{ strtoupper(substr($userOption->name,0,1)) }}</span><span><b>{{ $userOption->name }}</b><small>{{ $userOption->role?->name }} · {{ $userOption->employee?->department ?? $userOption->email }}</small></span></button></form>
+                    @php
+                        $emailPrefix = strstr($userOption->email, '@', true) ?: $userOption->email;
+                        $searchKeywords = strtolower(trim($userOption->name.' '.$emailPrefix.' '.($userOption->role?->name ?? '').' '.($userOption->employee?->department ?? '')));
+                        $isChecked = in_array($userOption->id, $assignedUserIds, true);
+                    @endphp
+                    <label data-person-search="{{ $searchKeywords }}" style="display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; cursor:pointer; background:{{ $isChecked ? '#EEF2FF' : 'transparent' }}; border:1px solid {{ $isChecked ? '#C7D2FE' : 'transparent' }};" onmouseenter="if(!this.querySelector('input').checked) this.style.background='#F8FAFC';" onmouseleave="if(!this.querySelector('input').checked) this.style.background='transparent';">
+                        <input type="checkbox" name="assigned_to_user_ids[]" value="{{ $userOption->id }}" {{ $isChecked ? 'checked' : '' }} style="accent-color:#4F46E5; width:15px; height:15px; cursor:pointer;">
+                        <span class="tm-card-owner" style="width:24px; height:24px; font-size:11px; flex-shrink:0;">{{ strtoupper(substr($userOption->name,0,1)) }}</span>
+                        <span style="display:flex; flex-direction:column; min-width:0;">
+                            <b style="font-size:12px; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $userOption->name }}</b>
+                            <small style="font-size:10px; color:#64748B;">{{ $userOption->role?->name ?? $userOption->email }}</small>
+                        </span>
+                    </label>
                 @empty
                     <p class="tm-empty-copy">No employees are available for assignment.</p>
                 @endforelse
             </div>
-        </div>
-    @endcan
-@endif
+            <div style="display:flex; justify-content:flex-end; gap:6px; padding-top:6px; border-top:1px solid #F1F5F9;">
+                <button type="button" class="blade-secondary-action" x-on:click="assigneeOpen=false" style="padding:4px 10px; font-size:11.5px;">Cancel</button>
+                <button type="submit" class="blade-primary-action" style="padding:4px 12px; font-size:11.5px;"><i class="fa-solid fa-check"></i> Save Assignees</button>
+            </div>
+        </form>
+    </div>
+@endcan
 
 @can('requestTransfer',$selectedTask)
     <div class="tm-modal-scrim tm-transfer-scrim" x-show="transferOpen" x-cloak>
