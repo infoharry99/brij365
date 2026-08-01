@@ -210,6 +210,7 @@ class ChatApiController extends Controller
      */
     public function sendMessage(Request $request, ChatConversation $conversation, SendChatMessage $action): JsonResponse
     {
+        \Log::info('REQUEST FILES: ' . json_encode($request->all()));
         if ($request->hasFile('attachments') && ! is_array($request->file('attachments'))) {
             $request->files->set('attachments', [$request->file('attachments')]);
         } elseif ($request->hasFile('attachment')) {
