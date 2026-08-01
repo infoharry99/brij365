@@ -211,10 +211,10 @@
                                             filter: function() {
                                                 var q = String(this.query || '').trim().toLowerCase();
                                                 var visibleCount = 0;
-                                                var rootEl = this.$el || document;
+                                                var rootEl = this.$root || (this.$el ? (this.$el.closest ? this.$el.closest('form') : null) : null) || document;
                                                 var rows = rootEl.querySelectorAll('[data-task-mention-option]');
                                                 rows.forEach(function(row) {
-                                                    var searchable = String(row.dataset.personSearch || '').toLowerCase();
+                                                    var searchable = String(row.getAttribute('data-person-search') || row.dataset.personSearch || '').toLowerCase();
                                                     var matches = (q === '' || searchable.indexOf(q) !== -1);
                                                     row.hidden = ! matches;
                                                     row.style.display = matches ? 'flex' : 'none';
@@ -231,7 +231,7 @@
                                                 var start = (this.triggerStart !== null && this.triggerStart !== undefined) ? this.triggerStart : body.selectionStart;
                                                 var end = body.selectionStart;
                                                 body.value = body.value.slice(0, start) + '@' + name + ' ' + body.value.slice(end);
-                                                var rootEl = this.$el || document;
+                                                var rootEl = this.$root || (this.$el ? (this.$el.closest ? this.$el.closest('form') : null) : null) || document;
                                                 var checkbox = rootEl.querySelector('[data-mention-id="' + id + '"]');
                                                 if (checkbox) checkbox.checked = true;
                                                 this.close();
