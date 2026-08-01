@@ -48,7 +48,7 @@
                 @endif
 
                 @if ($message->body)
-                    <div class="b360-message-bubble">{!! preg_replace('/(^|\s)@([A-Za-z0-9_\-\.]+(?:\s[A-Za-z0-9_\-\.]+)?)/u', '$1<span class="tm-mention-highlight" style="display:inline-flex;align-items:center;gap:2px;background:#EEF2FF;color:#4F46E5;font-weight:700;padding:1px 6px;margin:0 1px;border-radius:5px;border:1px solid #C7D2FE;font-size:0.95em;">@$2</span>', e($message->body)) !!}</div>
+                    <div class="b360-message-bubble">{!! preg_replace('/(^|\s)@([A-Za-z0-9_\-\.]+)/u', '$1<span class="tm-mention-highlight" style="display:inline-flex;align-items:center;gap:2px;background:#EEF2FF;color:#4F46E5;font-weight:700;padding:1px 6px;margin:0 1px;border-radius:5px;border:1px solid #C7D2FE;font-size:0.95em;">@$2</span>', e($message->body)) !!}</div>
                 @endif
 
                 @php
