@@ -2023,6 +2023,9 @@ Alpine.data('chatRealtime', () => ({
 
         if (! match) {
             this.mentionTriggerStart = null;
+            if (this.$refs.mentionMenu) {
+                this.$refs.mentionMenu.open = false;
+            }
             return;
         }
 

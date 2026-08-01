@@ -940,7 +940,11 @@
                                             <div class="b360-mention-options">
                                                 @foreach ($selectedConversation->activeMembers as $member)
                                                     @if ($member->user && (int) $member->user_id !== (int) auth()->id())
-                                                        <label data-mention-option data-search="{{ str($member->user->name.' '.$member->user->email.' '.($member->user->role?->name ?? ''))->lower() }}">
+                                                        @php
+                                                            $emailPrefix = strstr($member->user->email, '@', true) ?: $member->user->email;
+                                                            $searchString = strtolower(trim($member->user->name.' '.$emailPrefix.' '.($member->user->role?->name ?? '')));
+                                                        @endphp
+                                                        <label data-mention-option data-search="{{ $searchString }}">
                                                             <input type="checkbox" name="metadata[mentions][]" value="{{ $member->user_id }}" data-mention-name="{{ $member->user->name }}" x-on:change="toggleMention">
                                                             <x-ui.user-avatar :user="$member->user" :label="$member->user->name" class="b360-mention-avatar" />
                                                             <span><strong>{{ $member->user->name }}</strong><small>{{ $member->user->role?->name ?? $member->user->email }}</small></span>
@@ -1204,6 +1208,45 @@
                     setTimeout(function() {
                         updateDOMPreview(form, [], window.getChatComponent ? window.getChatComponent() : null);
                     }, 50);
+                }
+            });
+
+            document.addEventListener('input', function(event) {
+                const textarea = event.target;
+                if (! textarea || textarea.tagName !== 'TEXTAREA' || textarea.name !== 'body') return;
+
+                const composerBox = textarea.closest('.b360-composer-box');
+                if (! composerBox) return;
+
+                const mentionMenu = composerBox.querySelector('.b360-composer-mentions');
+                if (! mentionMenu) return;
+
+                const cursor = textarea.selectionStart ?? textarea.value.length;
+                const beforeCursor = textarea.value.slice(0, cursor);
+                const match = beforeCursor.match(/(?:^|\s)@([^\s@]*)$/);
+
+                if (! match) {
+                    mentionMenu.open = false;
+                } else {
+                    mentionMenu.open = true;
+                    const searchInput = mentionMenu.querySelector('input[type="search"]');
+                    const q = match[1].toLowerCase().trim();
+                    if (searchInput) {
+                        searchInput.value = match[1];
+                    }
+                    let visibleCount = 0;
+                    const options = mentionMenu.querySelectorAll('[data-mention-option]');
+                    options.forEach(function(opt) {
+                        const searchable = String(opt.getAttribute('data-search') || opt.dataset.search || '').toLowerCase();
+                        const isMatch = ! q || searchable.indexOf(q) !== -1;
+                        opt.hidden = ! isMatch;
+                        opt.style.display = isMatch ? 'flex' : 'none';
+                        if (isMatch) visibleCount++;
+                    });
+                    const noMatchMsg = mentionMenu.querySelector('p[x-show="noMentionMatches"]');
+                    if (noMatchMsg) {
+                        noMatchMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+                    }
                 }
             });
 
