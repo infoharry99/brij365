@@ -5968,7 +5968,7 @@ class Builder360Bootstrap
 
         return [
             'source' => 'laravel-sqlite',
-            'index_url' => route('collaboration.tasks.index', [], false),
+            'index_url' => route('collaboration.tasks.index', ['scope' => 'mine'], false),
             'export_url' => route('collaboration.tasks.export', [], false),
             'store_url' => route('collaboration.tasks.store', [], false),
             'bulk_update_url' => route('collaboration.tasks.bulk-update', [], false),

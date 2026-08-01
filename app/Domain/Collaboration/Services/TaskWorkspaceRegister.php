@@ -44,7 +44,7 @@ final class TaskWorkspaceRegister
      */
     public function workspace(User $user, array $filters): array
     {
-        $scope = (string) ($filters['scope'] ?? 'dashboard');
+        $scope = (string) ($filters['scope'] ?? 'mine');
         $baseFilters = collect($filters)
             ->except(['scope', 'view', 'task_id', 'sort', 'direction', 'page'])
             ->all();
