@@ -242,17 +242,22 @@ class ChatApiController extends Controller
         $command = new ChatCommandData($data, $user, $request);
         $message = $action->execute($conversation, $command);
 
+        // Dispatch FCM Push Notification to conversation members
+        try {
+            $conversation->loadMissing('members');
+            $recipients = $conversation->members ? $conversation->members->reject(fn ($m) => (int) $m->id === (int) $user->id) : [];
+            app(\App\Services\Collaboration\FcmNotificationService::class)->sendChatMessageNotification($message, $recipients);
+        } catch (\Throwable $e) {
+            \Log::warning('[FCM Push] Notification error: ' . $e->getMessage());
+        }
+
         return response()->json([
             'message' => 'Message sent.',
             'data'    => (new ChatMessageResource($message))->resolve($request),
         ], 201);
     }
 
-    /**
-     * PATCH /api/chat/conversations/{conversation}/read
-     *
-     * Mark all messages in a conversation as read.
-     */
+  
     public function markRead(Request $request, ChatConversation $conversation): JsonResponse
     {
         /** @var User $user */

@@ -33,6 +33,7 @@ Route::middleware(['auth:sanctum', 'account.active'])->group(function (): void {
     Route::prefix('auth')->name('api.auth.')->group(function (): void {
         Route::post('/logout', [AuthApiController::class, 'logout'])->name('logout');
         Route::get('/me', [AuthApiController::class, 'me'])->name('me');
+        Route::post('/fcm-token', [AuthApiController::class, 'updateFcmToken'])->name('fcm-token.update');
     });
 
     // Chat Connect

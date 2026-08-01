@@ -106,6 +106,30 @@ class AuthApiController extends Controller
     }
 
     /**
+     * POST /api/auth/fcm-token
+     * Store/update the user's FCM device token for push notifications.
+     */
+    public function updateFcmToken(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'fcm_token' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        try {
+            $request->user()->update([
+                'fcm_token' => $data['fcm_token'] ?? null,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[FCM Token] Could not save FCM token: '.$e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'FCM device token updated successfully.',
+            'fcm_token' => $data['fcm_token'] ?? null,
+        ]);
+    }
+
+    /**
      * Build a consistent user payload for API responses.
      *
      * @param \App\Models\User $user
