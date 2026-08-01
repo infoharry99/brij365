@@ -56,14 +56,14 @@
                 <article class="tm-detail-card"><header class="tm-detail-card-head"><i class="fa-regular fa-file-lines"></i><h3>Description</h3></header><div class="tm-detail-card-body">@if($selectedTask->description)<p class="tm-desc">{{ $selectedTask->description }}</p>@else<p class="tm-empty-copy">No description added.</p>@endif</div></article>
                 {{-- <article class="tm-detail-card"><header class="tm-detail-card-head"><i class="fa-solid fa-tags"></i><h3>Tags and context</h3></header><div class="tm-detail-card-body tm-card-tags">@if($selectedTask->module_context)<span class="tm-tag">{{ str_replace('_',' ',$selectedTask->module_context) }}</span>@endif @if($selectedTask->project)<span class="tm-tag">{{ $selectedTask->project->code }}</span>@endif @if(!$selectedTask->module_context && !$selectedTask->project)<p class="tm-empty-copy">No tags added.</p>@endif</div></article> --}}
                 <article class="tm-detail-card"><header class="tm-detail-card-head"><i class="fa-solid fa-paperclip"></i><h3>Attachments</h3><span class="cnt">{{ $selectedTask->attachments->count() }}</span></header><div class="tm-detail-card-body">
-                    @forelse($selectedTask->attachments as $attachment)<div class="tm-attachment-row"><span class="tm-attachment-icon">@if(str_starts_with($attachment->mime_type,'image/'))<i class="fa-regular fa-file-image"></i>@elseif(str_starts_with($attachment->mime_type,'video/'))<i class="fa-regular fa-file-video"></i>@elseif(str_starts_with($attachment->mime_type,'audio/'))<i class="fa-regular fa-file-audio"></i>@elseif($attachment->mime_type==='application/pdf')<i class="fa-regular fa-file-pdf"></i>@else<i class="fa-regular fa-file"></i>@endif</span><span><b>{{ $attachment->original_filename }}</b><small>{{ number_format($attachment->size_bytes / 1024, 1) }} KB · {{ str_replace('_',' ',$attachment->scan_status) }}</small></span>@if((str_starts_with($attachment->mime_type,'image/') || str_starts_with($attachment->mime_type,'video/') || str_starts_with($attachment->mime_type,'audio/') || $attachment->mime_type==='application/pdf') && !in_array($attachment->scan_status,['blocked','failed'],true))<a class="tm-iconbtn" target="_blank" rel="noopener" href="{{ route('collaboration.tasks.attachments.preview',[$selectedTask,$attachment]) }}" aria-label="Preview {{ $attachment->original_filename }}"><i class="fa-solid fa-eye"></i></a>@endif<a class="tm-iconbtn" href="{{ route('collaboration.tasks.attachments.download',[$selectedTask,$attachment]) }}" aria-label="Download {{ $attachment->original_filename }}"><i class="fa-solid fa-download"></i></a>@can('updateDetails',$selectedTask)<form method="POST" action="{{ route('collaboration.tasks.attachments.destroy',[$selectedTask,$attachment]) }}">@csrf @method('DELETE')<button class="tm-iconbtn is-danger" type="submit" aria-label="Remove {{ $attachment->original_filename }}"><i class="fa-solid fa-xmark"></i></button></form>@endcan</div>@empty<div class="tm-empty-panel"><span class="tm-empty-ic"><i class="fa-solid fa-paperclip"></i></span><span><b>No attachments</b><small>Files added to this task will remain private to authorized task users.</small></span></div>@endforelse
+                    @forelse($selectedTask->attachments as $attachment)<div class="tm-attachment-row"><span class="tm-attachment-icon">@if(str_starts_with($attachment->mime_type,'image/'))<i class="fa-regular fa-file-image"></i>@elseif(str_starts_with($attachment->mime_type,'audio/') || str_ends_with(strtolower($attachment->original_filename),'.m4a'))<i class="fa-regular fa-file-audio"></i>@elseif(str_starts_with($attachment->mime_type,'video/'))<i class="fa-regular fa-file-video"></i>@elseif($attachment->mime_type==='application/pdf')<i class="fa-regular fa-file-pdf"></i>@else<i class="fa-regular fa-file"></i>@endif</span><span><b>{{ $attachment->original_filename }}</b><small>{{ number_format($attachment->size_bytes / 1024, 1) }} KB · {{ str_replace('_',' ',$attachment->scan_status) }}</small></span>@if((str_starts_with($attachment->mime_type,'image/') || str_starts_with($attachment->mime_type,'video/') || str_starts_with($attachment->mime_type,'audio/') || str_ends_with(strtolower($attachment->original_filename),'.m4a') || $attachment->mime_type==='application/pdf') && !in_array($attachment->scan_status,['blocked','failed'],true))<a class="tm-iconbtn" target="_blank" rel="noopener" href="{{ route('collaboration.tasks.attachments.preview',[$selectedTask,$attachment]) }}" aria-label="Preview {{ $attachment->original_filename }}"><i class="fa-solid fa-eye"></i></a>@endif<a class="tm-iconbtn" href="{{ route('collaboration.tasks.attachments.download',[$selectedTask,$attachment]) }}" aria-label="Download {{ $attachment->original_filename }}"><i class="fa-solid fa-download"></i></a>@can('updateDetails',$selectedTask)<form method="POST" action="{{ route('collaboration.tasks.attachments.destroy',[$selectedTask,$attachment]) }}">@csrf @method('DELETE')<button class="tm-iconbtn is-danger" type="submit" aria-label="Remove {{ $attachment->original_filename }}"><i class="fa-solid fa-xmark"></i></button></form>@endcan</div>@empty<div class="tm-empty-panel"><span class="tm-empty-ic"><i class="fa-solid fa-paperclip"></i></span><span><b>No attachments</b><small>Files added to this task will remain private to authorized task users.</small></span></div>@endforelse
                     @can('updateDetails',$selectedTask)
                         <form class="tm-attachment-upload" method="POST" enctype="multipart/form-data" action="{{ route('collaboration.tasks.attachments.store',$selectedTask) }}">
                             @csrf
                             <label class="tm-file-drop">
                                 <i class="fa-solid fa-cloud-arrow-up"></i>
-                                <span id="tm-file-label-text">Choose a file (Images, PDF, Office, ZIP up to 5MB)</span>
-                                <input type="file" name="attachment" id="tm-file-input" required accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip" onchange="validateTaskAttachmentInput(this)">
+                                <span id="tm-file-label-text">Choose a file (Images, Audio, PDF, Office, ZIP up to 25MB)</span>
+                                <input type="file" name="attachment" id="tm-file-input" required accept="image/*,audio/*,.m4a,.mp3,.wav,.aac,.ogg,.webm,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z" onchange="validateTaskAttachmentInput(this)">
                             </label>
                             <button class="blade-primary-action" type="submit">Upload</button>
                         </form>
@@ -389,7 +389,7 @@
 function validateTaskAttachmentInput(input) {
     const errorDiv = document.getElementById('tm-file-js-error');
     const labelSpan = document.getElementById('tm-file-label-text');
-    const defaultLabel = 'Choose a file (Images, PDF, Office, ZIP up to 5MB)';
+    const defaultLabel = 'Choose a file (Images, Audio, PDF, Office, ZIP up to 25MB)';
     if (errorDiv) {
         errorDiv.style.display = 'none';
         errorDiv.innerHTML = '';
@@ -401,10 +401,11 @@ function validateTaskAttachmentInput(input) {
 
     const file = input.files[0];
 
-    // Check if video file selected
-    if (file.type.startsWith('video/') || /\.(mp4|mov|avi|webm|mkv|3gp|flv|wmv)$/i.test(file.name)) {
+    // Check if video file selected (allow audio/voice files like .m4a, .mp3, .wav, .aac, .ogg)
+    const isAudio = file.type.startsWith('audio/') || /\.(m4a|mp3|wav|aac|ogg|oga|webm|flac|opus|amr|wma|3gp)$/i.test(file.name);
+    if (!isAudio && (file.type.startsWith('video/') || /\.(mp4|mov|avi|mkv|flv|wmv)$/i.test(file.name))) {
         if (errorDiv) {
-            errorDiv.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Video files are not allowed. Please select an image or document under 5 MB.';
+            errorDiv.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Video files are not allowed. Please select an image, audio recording, or document under 25 MB.';
             errorDiv.style.display = 'block';
         }
         input.value = '';
@@ -412,11 +413,11 @@ function validateTaskAttachmentInput(input) {
         return;
     }
 
-    // Check file size (5 MB max)
-    const maxSizeBytes = 5 * 1024 * 1024; // 5 MB
+    // Check file size (25 MB max)
+    const maxSizeBytes = 25 * 1024 * 1024; // 25 MB
     if (file.size > maxSizeBytes) {
         if (errorDiv) {
-            errorDiv.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> File size limit exceeded (' + (file.size / (1024 * 1024)).toFixed(2) + ' MB). Only files up to 5 MB are allowed.';
+            errorDiv.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> File size limit exceeded (' + (file.size / (1024 * 1024)).toFixed(2) + ' MB). Only files up to 25 MB are allowed.';
             errorDiv.style.display = 'block';
         }
         input.value = '';

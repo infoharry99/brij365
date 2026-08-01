@@ -20,6 +20,19 @@ class StoreChatMessageRequest extends FormRequest
             && ($this->user()?->can('post', $conversation) ?? false);
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->hasFile('attachments') && ! is_array($this->file('attachments'))) {
+            $this->files->set('attachments', [$this->file('attachments')]);
+        } elseif ($this->hasFile('attachment')) {
+            $existing = is_array($this->file('attachments')) ? $this->file('attachments') : [];
+            $this->files->set('attachments', array_merge($existing, [$this->file('attachment')]));
+        } elseif ($this->hasFile('file')) {
+            $existing = is_array($this->file('attachments')) ? $this->file('attachments') : [];
+            $this->files->set('attachments', array_merge($existing, [$this->file('file')]));
+        }
+    }
+
     public function rules(): array
     {
         return [

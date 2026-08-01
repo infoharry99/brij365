@@ -210,6 +210,16 @@ class ChatApiController extends Controller
      */
     public function sendMessage(Request $request, ChatConversation $conversation, SendChatMessage $action): JsonResponse
     {
+        if ($request->hasFile('attachments') && ! is_array($request->file('attachments'))) {
+            $request->files->set('attachments', [$request->file('attachments')]);
+        } elseif ($request->hasFile('attachment')) {
+            $existing = is_array($request->file('attachments')) ? $request->file('attachments') : [];
+            $request->files->set('attachments', array_merge($existing, [$request->file('attachment')]));
+        } elseif ($request->hasFile('file')) {
+            $existing = is_array($request->file('attachments')) ? $request->file('attachments') : [];
+            $request->files->set('attachments', array_merge($existing, [$request->file('file')]));
+        }
+
         $data = $request->validate([
             'body'              => ['nullable', 'string', 'max:10000'],
             'message_type'      => ['nullable', 'string', Rule::in(['text', 'file', 'voice_note'])],
