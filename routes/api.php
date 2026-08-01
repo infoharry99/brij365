@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\Api\ChatApiController;
+use App\Http\Controllers\Api\TaskApiController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -57,5 +58,11 @@ Route::middleware(['auth:sanctum', 'account.active'])->group(function (): void {
         Route::get('/attachments/{attachment}/download', [ChatApiController::class, 'downloadAttachment'])->name('attachments.download');
         Route::get('/attachments/{attachment}/preview', [ChatApiController::class, 'previewAttachment'])->name('attachments.preview');
         Route::get('/conversations/{conversation}/attachments/{attachment}/download', [ChatApiController::class, 'downloadAttachment'])->name('conversations.attachments.download');
+    });
+
+    // Task Management APIs (For Mobile App Task Details Popup & Comments)
+    Route::prefix('tasks')->name('api.tasks.')->group(function (): void {
+        Route::get('/{workTask}', [TaskApiController::class, 'show'])->name('show');
+        Route::post('/{workTask}/comments', [TaskApiController::class, 'storeComment'])->name('comments.store');
     });
 });

@@ -90,6 +90,8 @@ class ChatMessageResource extends JsonResource
                 'delivered_at' => $read->delivered_at?->toISOString(),
                 'read_at' => $read->read_at?->toISOString(),
             ])->values()->all()),
+            'task' => $this->resolveTaskDetails($request),
+            'metadata' => $this->metadata ?? [],
             'can_edit' => false,
             'can_delete' => $user ? app(\App\Services\Collaboration\ChatConnectService::class)->canDeleteMessage($user, $this->resource) : false,
             'can_download' => true,
@@ -97,6 +99,36 @@ class ChatMessageResource extends JsonResource
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
+    }
+
+    private function resolveTaskDetails(Request $request): ?array
+    {
+        $taskId = data_get($this->metadata, 'task_id');
+        if (! $taskId) {
+            return null;
+        }
+
+        $task = \App\Models\WorkTask::query()
+            ->with([
+                'createdBy:id,name,email,profile_photo_path',
+                'assignedTo:id,name,email,profile_photo_path',
+                'assignees:id,name,email,profile_photo_path',
+                'comments.author:id,name,email,profile_photo_path',
+                'attachments',
+                'subtasks',
+            ])
+            ->find($taskId);
+
+        if (! $task) {
+            return [
+                'id' => (int) $taskId,
+                'task_number' => data_get($this->metadata, 'task_number'),
+                'title' => data_get($this->metadata, 'task_title'),
+                'action_url' => data_get($this->metadata, 'action_url'),
+            ];
+        }
+
+        return (new WorkTaskResource($task))->resolve($request);
     }
 
     private function sizeLabel(int $bytes): string
