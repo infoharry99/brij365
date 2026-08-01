@@ -108,6 +108,8 @@ class ChatApiController extends Controller
         /** @var User $user */
         $user = $request->user();
 
+        \Log::info('REQUEST DATA: ' . json_encode($data));
+
         // Basic client-side guard (full authorization is done inside the service)
         if ($data['type'] === 'direct_message' && count($data['member_user_ids']) !== 1) {
             throw ValidationException::withMessages([
