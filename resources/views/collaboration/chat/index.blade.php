@@ -955,7 +955,7 @@
                                             </div>
                                         </div>
                                     </details>
-                                    <div class="b360-ai-inline-tools" title="AI Polish Assistant">
+                                    <!-- <div class="b360-ai-inline-tools" title="AI Polish Assistant">
                                         <button type="button" class="b360-ai-chip" onclick="window.aiPolishMessage('professional', this)" title="Make Professional">
                                             <span>💼</span> <span>Professional</span>
                                         </button>
@@ -965,7 +965,7 @@
                                         <button type="button" class="b360-ai-chip" onclick="window.aiPolishMessage('fix_grammar', this)" title="Fix & Polish">
                                             <span>✨</span> <span>Fix & Polish</span>
                                         </button>
-                                    </div>
+                                    </div> -->
                                     <span class="b360-composer-hint"></span>
                                     <button class="b360-composer-send" type="submit" aria-label="Send message" x-bind:disabled="busy"><i class="fa-solid fa-paper-plane"></i></button>
                                 </div>
