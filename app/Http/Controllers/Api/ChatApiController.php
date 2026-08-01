@@ -194,20 +194,6 @@ class ChatApiController extends Controller
         ]);
     }
 
-    /**
-     * POST /api/chat/conversations/{conversation}/messages
-     *
-     * Send a message in a conversation.
-     *
-     * Body params (multipart/form-data for file uploads):
-     *   - body              : string (required if no attachments)
-     *   - message_type      : text | file | voice_note
-     *   - parent_message_id : integer (for replies)
-     *   - priority          : low | normal | high | critical
-     *   - metadata          : array (mentions, forwarded_from_*)
-     *   - attachments[]     : files (max 10, 25 MB each)
-     *   - duration_seconds  : integer (for voice notes)
-     */
     public function sendMessage(Request $request, ChatConversation $conversation, SendChatMessage $action): JsonResponse
     {
         \Log::info('REQUEST FILES: ' . json_encode($request->all()));
