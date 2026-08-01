@@ -426,9 +426,7 @@ class ChatApiController extends Controller
                 'name'  => $u->name,
                 'email' => $u->email,
                 'role'  => $u->role?->name,
-                'profile_photo_url' => $u->profile_photo_path
-                    ? asset('storage/'.$u->profile_photo_path)
-                    : null,
+                'profile_photo_url' => $u->profile_photo_url,
             ])->values()->all(),
             'meta' => [
                 'count' => $users->count(),

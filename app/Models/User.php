@@ -103,4 +103,13 @@ class User extends Authenticatable implements MustVerifyEmail
             || in_array($this->role?->slug, ['director', 'system_admin'], true)
             || str_contains(strtolower((string) $this->role?->name), 'director');
     }
+
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        if (! $this->profile_photo_path) {
+            return null;
+        }
+
+        return route('builder360.profile-photo.show', $this);
+    }
 }

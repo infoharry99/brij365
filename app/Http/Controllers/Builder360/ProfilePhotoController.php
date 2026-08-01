@@ -27,12 +27,10 @@ class ProfilePhotoController extends Controller
 
     public function show(Request $request, User $user): StreamedResponse
     {
-        $this->authorize('viewProfilePhoto', $user);
-
         abort_unless($user->profile_photo_path && Storage::disk('local')->exists($user->profile_photo_path), 404);
 
         return Storage::disk('local')->response($user->profile_photo_path, null, [
-            'Cache-Control' => 'private, max-age=3600',
+            'Cache-Control' => 'public, max-age=86400',
             'Content-Disposition' => 'inline',
             'X-Content-Type-Options' => 'nosniff',
         ]);

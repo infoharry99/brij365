@@ -129,9 +129,7 @@ class AuthApiController extends Controller
                 'name' => $user->company->name,
                 'code' => $user->company->code ?? null,
             ] : null,
-            'profile_photo_url' => $user->profile_photo_path
-                ? asset('storage/'.$user->profile_photo_path)
-                : null,
+            'profile_photo_url' => $user->profile_photo_url,
             'created_at'        => $user->created_at?->toISOString(),
         ];
     }
