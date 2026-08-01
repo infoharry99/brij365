@@ -72,7 +72,7 @@
                             </span>
                         </div>
                         @if($actionUrl)
-                            <a href="{{ $actionUrl }}" style="display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:700; color:#4338CA; text-decoration:none; background:#FFFFFF; padding:4px 10px; border-radius:6px; border:1px solid #C7D2FE; flex-shrink:0; transition:all .15s ease;" onmouseenter="this.style.background='#4F46E5'; this.style.color='#FFF';" onmouseleave="this.style.background='#FFF'; this.style.color='#4338CA';">
+                            <a href="{{ $actionUrl }}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:700; color:#4338CA; text-decoration:none; background:#FFFFFF; padding:4px 10px; border-radius:6px; border:1px solid #C7D2FE; flex-shrink:0; transition:all .15s ease;" onmouseenter="this.style.background='#4F46E5'; this.style.color='#FFF';" onmouseleave="this.style.background='#FFF'; this.style.color='#4338CA';">
                                 Open Task <i class="fa-solid fa-arrow-right" style="font-size:10px;"></i>
                             </a>
                         @endif
