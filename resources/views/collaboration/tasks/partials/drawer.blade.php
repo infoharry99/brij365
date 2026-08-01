@@ -161,8 +161,8 @@
                                 </div>
                             </div>
                             <div style="display:flex; align-items:center; justify-content:space-between; padding-top:4px;">
-                                <button class="tm-iconbtn" type="button" x-on:click="show" aria-label="Mention a teammate" style="display:inline-flex; align-items:center; gap:6px; background:#F1F5F9; border:1px solid #E2E8F0; color:#475569; font-size:12px; font-weight:600; padding:6px 12px; border-radius:6px; cursor:pointer; transition:all .15s ease;" onmouseenter="this.style.background='#EEF2FF'; this.style.color='#4F46E5';" onmouseleave="this.style.background='#F1F5F9'; this.style.color='#475569';">
-                                    <i class="fa-solid fa-at" style="color:#6366F1;"></i> Mention teammate
+                                <button type="button" x-on:click="show" aria-label="Mention a teammate" style="display:inline-flex; align-items:center; gap:6px; background:#F1F5F9; border:1px solid #CBD5E1; color:#334155; font-size:12px; font-weight:600; padding:6px 14px; border-radius:6px; cursor:pointer; line-height:1.2; white-space:nowrap; transition:all .15s ease;" onmouseenter="this.style.background='#EEF2FF'; this.style.color='#4F46E5'; this.style.borderColor='#C7D2FE';" onmouseleave="this.style.background='#F1F5F9'; this.style.color='#334155'; this.style.borderColor='#CBD5E1';">
+                                    <i class="fa-solid fa-at" style="color:#6366F1; font-size:13px;"></i> <span>Mention teammate</span>
                                 </button>
                                 <button class="blade-primary-action" type="submit" style="display:inline-flex; align-items:center; gap:6px; background:#4F46E5; color:#fff; border:none; padding:8px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; box-shadow:0 2px 6px rgba(79,70,229,0.25);">
                                     <i class="fa-solid fa-paper-plane" style="font-size:12px;"></i> Comment
