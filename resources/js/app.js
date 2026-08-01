@@ -1452,35 +1452,45 @@ Alpine.data('taskMentionComposer', () => ({
     open: false,
     query: '',
     triggerStart: null,
+    noMatches: false,
     input() {
-        const value = this.$refs.body.value;
-        const caret = this.$refs.body.selectionStart;
+        const body = this.$refs.body;
+        if (! body) return;
+        const value = body.value;
+        const caret = body.selectionStart;
         const match = value.slice(0, caret).match(/(^|\s)@([^\s@]*)$/);
         if (! match) { this.close(); return; }
+        const leadingSpaceLen = match[1].length;
         this.triggerStart = caret - match[2].length - 1;
         this.query = match[2].toLowerCase();
         this.open = true;
         this.filter();
     },
     show() {
-        this.triggerStart = this.$refs.body.selectionStart;
+        this.triggerStart = this.$refs.body?.selectionStart ?? 0;
         this.query = '';
         this.open = true;
         this.filter();
-        this.$refs.body.focus();
+        this.$nextTick(() => this.$refs.body?.focus());
     },
     filter() {
+        const q = String(this.query || '').trim().toLowerCase();
+        let visibleCount = 0;
         this.$root.querySelectorAll('[data-task-mention-option]').forEach((row) => {
-            const matches = this.query === '' || String(row.dataset.personSearch || '').includes(this.query);
+            const searchable = String(row.dataset.personSearch || '').toLowerCase();
+            const matches = q === '' || searchable.includes(q);
             row.hidden = ! matches;
-            row.style.display = matches ? '' : 'none';
+            row.style.display = matches ? 'flex' : 'none';
+            if (matches) visibleCount++;
         });
+        this.noMatches = visibleCount === 0;
     },
     select(event) {
         const button = event.currentTarget;
         const name = button.dataset.personName;
         const id = button.dataset.personId;
         const body = this.$refs.body;
+        if (! body) return;
         const start = this.triggerStart ?? body.selectionStart;
         const end = body.selectionStart;
         body.value = `${body.value.slice(0, start)}@${name} ${body.value.slice(end)}`;
@@ -1493,6 +1503,7 @@ Alpine.data('taskMentionComposer', () => ({
         this.open = false;
         this.query = '';
         this.triggerStart = null;
+        this.noMatches = false;
     },
 }));
 

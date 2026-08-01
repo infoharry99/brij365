@@ -134,13 +134,21 @@
                             <div style="position:relative; width:100%;">
                                 <textarea x-ref="body" x-on:input="input" class="tm-textarea" name="body" maxlength="2000" required placeholder="Write a comment… Type @ to mention a teammate" style="width:100%; min-height:90px; border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px; font-size:13.5px; font-family:inherit; resize:vertical; outline:none; transition:border-color .15s, box-shadow .15s;" onfocus="this.style.borderColor='#6366F1'; this.style.boxShadow='0 0 0 3px rgba(99,102,241,0.12)';" onblur="this.style.borderColor='#E2E8F0'; this.style.boxShadow='none';"></textarea>
                                 
-                                <div class="tm-mention-popover" x-show="open" x-cloak style="position:absolute; bottom:100%; left:0; width:280px; max-height:220px; overflow-y:auto; background:#fff; border:1px solid #CBD5E1; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.15); z-index:99; padding:8px;">
-                                    <header style="padding:4px 8px; border-bottom:1px solid #F1F5F9; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-                                        <b style="font-size:12px; color:#1E293B;">Mention a teammate</b>
+                                <div class="tm-mention-popover" x-show="open" x-cloak style="position:absolute; bottom:100%; left:0; width:280px; max-height:250px; overflow-y:auto; background:#fff; border:1px solid #CBD5E1; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.15); z-index:99; padding:8px;">
+                                    <header style="padding:4px 6px 8px; border-bottom:1px solid #F1F5F9; margin-bottom:6px; display:flex; flex-direction:column; gap:6px;">
+                                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                                            <b style="font-size:12px; color:#1E293B;">Mention a teammate</b>
+                                            <small style="font-size:10px; color:#64748B;" x-text="query ? 'Filtering: &quot;'+query+'&quot;' : 'All teammates'"></small>
+                                        </div>
+                                        <input type="search" x-model="query" x-on:input="filter" placeholder="Search teammate name or role..." style="width:100%; padding:5px 8px; font-size:11.5px; border:1px solid #CBD5E1; border-radius:6px; outline:none; font-family:inherit;" x-on:keydown.escape="close">
                                     </header>
                                     <div class="tm-mention-list" style="display:flex; flex-direction:column; gap:4px;">
                                         @foreach($users as $userOption)
-                                            <button type="button" data-task-mention-option data-person-id="{{ $userOption->id }}" data-person-name="{{ $userOption->name }}" data-person-search="{{ strtolower($userOption->name.' '.$userOption->email.' '.($userOption->role?->name ?? '').' '.($userOption->employee?->department ?? '')) }}" x-on:click="select" style="display:flex; align-items:center; gap:8px; padding:6px 8px; border:none; background:transparent; border-radius:6px; cursor:pointer; text-align:left; width:100%;" onmouseenter="this.style.background='#F1F5F9';" onmouseleave="this.style.background='transparent';">
+                                            @php
+                                                $emailPrefix = strstr($userOption->email, '@', true) ?: $userOption->email;
+                                                $searchKeywords = strtolower($userOption->name.' '.$emailPrefix.' '.($userOption->role?->name ?? '').' '.($userOption->employee?->department ?? ''));
+                                            @endphp
+                                            <button type="button" data-task-mention-option data-person-id="{{ $userOption->id }}" data-person-name="{{ $userOption->name }}" data-person-search="{{ $searchKeywords }}" x-on:click="select" style="display:flex; align-items:center; gap:8px; padding:6px 8px; border:none; background:transparent; border-radius:6px; cursor:pointer; text-align:left; width:100%;" onmouseenter="this.style.background='#F1F5F9';" onmouseleave="this.style.background='transparent';">
                                                 <span style="display:flex; flex-direction:column; min-width:0;">
                                                     <b style="font-size:12px; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $userOption->name }}</b>
                                                     <small style="font-size:10px; color:#64748B;">{{ $userOption->role?->name ?? $userOption->email }}</small>
@@ -148,6 +156,7 @@
                                             </button>
                                             <input type="checkbox" hidden data-mention-id="{{ $userOption->id }}" name="mentions[]" value="{{ $userOption->id }}">
                                         @endforeach
+                                        <p x-show="noMatches" x-cloak style="font-size:11.5px; color:#64748B; text-align:center; padding:12px 6px; margin:0;">No matching teammates found.</p>
                                     </div>
                                 </div>
                             </div>

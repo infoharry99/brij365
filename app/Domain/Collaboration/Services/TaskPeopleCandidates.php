@@ -20,10 +20,25 @@ final class TaskPeopleCandidates
             ->orderBy('name');
 
         if ($task?->project_id && ! $actor->hasPermission('collaboration.manage')) {
+            $directorUserIds = User::query()
+                ->where('company_id', $task->company_id ?? $actor->company_id)
+                ->where('status', 'active')
+                ->where(function ($q) {
+                    $q->whereHas('role', function ($rq) {
+                        $rq->whereIn('slug', ['director', 'system_admin'])
+                            ->orWhere('name', 'like', '%Director%')
+                            ->orWhere('name', 'like', '%director%')
+                            ->orWhere('permissions', 'like', '%*%')
+                            ->orWhere('permissions', 'like', '%collaboration.manage%');
+                    });
+                })
+                ->pluck('id');
+
             $projectUserIds = ProjectTeamAssignment::query()
                 ->where('project_id', $task->project_id)
                 ->where('status', 'active')
                 ->pluck('user_id')
+                ->merge($directorUserIds)
                 ->push($actor->id)
                 ->push($task->created_by_user_id)
                 ->push($task->assigned_to_user_id)
