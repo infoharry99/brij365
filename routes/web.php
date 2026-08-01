@@ -129,6 +129,22 @@ Route::middleware(['auth', 'account.active', 'verified', 'company.active', 'thro
     Route::get('/profile', ProfileController::class)->name('builder360.profile');
     Route::patch('/profile/photo', [ProfilePhotoController::class, 'update'])->name('builder360.profile-photo.update');
     Route::get('/users/{user}/profile-photo', [ProfilePhotoController::class, 'show'])->name('builder360.profile-photo.show');
+    Route::get('/storage/profile-photos/{userId}/{filename}', function (string $userId, string $filename) {
+        $path = 'profile-photos/'.$userId.'/'.$filename;
+        if (\Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
+            return \Illuminate\Support\Facades\Storage::disk('local')->response($path, null, [
+                'Cache-Control' => 'public, max-age=86400',
+                'Content-Disposition' => 'inline',
+            ]);
+        }
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            return \Illuminate\Support\Facades\Storage::disk('public')->response($path, null, [
+                'Cache-Control' => 'public, max-age=86400',
+                'Content-Disposition' => 'inline',
+            ]);
+        }
+        abort(404);
+    })->where('filename', '.*');
     Route::get('/search', GlobalSearchController::class)->name('builder360.search');
     Route::post('/theme', ThemePreferenceController::class)->name('builder360.theme.store');
     Route::get('/scoring', ScoringOverviewController::class)->name('scoring.index');

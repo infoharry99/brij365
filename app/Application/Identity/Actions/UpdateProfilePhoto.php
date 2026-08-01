@@ -18,14 +18,20 @@ final class UpdateProfilePhoto
         $newPath = $data->photo->store('profile-photos/'.$data->actor->id, 'local');
 
         try {
+            Storage::disk('public')->putFileAs('profile-photos/'.$data->actor->id, $data->photo, basename($newPath));
+        } catch (Throwable $e) {}
+
+        try {
             $data->actor->forceFill(['profile_photo_path' => $newPath])->save();
         } catch (Throwable $exception) {
             Storage::disk('local')->delete($newPath);
+            Storage::disk('public')->delete($newPath);
             throw $exception;
         }
 
         if ($oldPath && $oldPath !== $newPath) {
             Storage::disk('local')->delete($oldPath);
+            Storage::disk('public')->delete($oldPath);
         }
 
         $this->auditLogger->record(
