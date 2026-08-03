@@ -114,6 +114,68 @@
             });
         };
     </script>
+    <!-- Firebase Web FCM Push Notifications -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
+    <script>
+        (function() {
+            if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyA9oKk0cFtqyfxaVqHDMrl644dDlaka1LU",
+                projectId: "brijchat-6d93f",
+                messagingSenderId: "589664366975",
+                appId: "1:589664366975:web:builder360"
+            };
+
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                const messaging = firebase.messaging();
+
+                navigator.serviceWorker.register('/firebase-messaging-sw.js').then((registration) => {
+                    messaging.useServiceWorker(registration);
+
+                    if (Notification.permission === 'granted') {
+                        initWebFcm(messaging);
+                    } else if (Notification.permission !== 'denied') {
+                        Notification.requestPermission().then((permission) => {
+                            if (permission === 'granted') {
+                                initWebFcm(messaging);
+                            }
+                        });
+                    }
+                }).catch(function(err) { console.warn('FCM SW registration error:', err); });
+
+                messaging.onMessage((payload) => {
+                    const title = payload.notification?.title || payload.data?.title || 'New Chat Message';
+                    const body = payload.notification?.body || payload.data?.body || '';
+                    if (Notification.permission === 'granted') {
+                        new Notification(title, { body: body, icon: '/favicon.ico', data: payload.data });
+                    }
+                });
+
+                function initWebFcm(msg) {
+                    msg.getToken().then((currentToken) => {
+                        if (currentToken) {
+                            fetch('/api/auth/fcm-token', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                                },
+                                body: JSON.stringify({ fcm_token: currentToken })
+                            }).catch(function(err) { console.warn('FCM token save error:', err); });
+                        }
+                    }).catch(function(err) { console.warn('FCM token error:', err); });
+                }
+            } catch(e) {
+                console.warn('FCM Web Init error:', e);
+            }
+        })();
+    </script>
     @stack('scripts')
 </body>
 </html>
