@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\User;
 use App\Http\Controllers\Controller;
 use App\Services\Auth\SecurityAuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -18,14 +20,45 @@ class AuthApiController extends Controller
     }
 
     /**
+     * POST /api/auth/register
+     * Register a new user and return Sanctum token.
+     */
+    public function register(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'name'      => ['required', 'string', 'max:255'],
+            'email'     => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password'  => ['required', 'string', 'min:8', 'confirmed'],
+            'fcm_token' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $user = User::create([
+            'name'      => $data['name'],
+            'email'     => $data['email'],
+            'password'  => Hash::make($data['password']),
+            'status'    => 'active',
+            'fcm_token' => $data['fcm_token'] ?? null,
+        ]);
+
+        $token = $user->createToken('mobile-app')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Registration successful.',
+            'token'   => $token,
+            'user'    => $this->userPayload($user->load('role', 'company')),
+        ], 201);
+    }
+
+    /**
      * POST /api/auth/login
      * Authenticate user and return Sanctum token.
      */
     public function login(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'email'    => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'email'     => ['required', 'string', 'email'],
+            'password'  => ['required', 'string'],
+            'fcm_token' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $throttleKey = Str::transliterate(Str::lower($data['email']).'|'.$request->ip());
@@ -61,6 +94,14 @@ class AuthApiController extends Controller
 
         /** @var \App\Models\User $user */
         $user = Auth::user();
+
+        if (! empty($data['fcm_token'])) {
+            try {
+                $user->update(['fcm_token' => $data['fcm_token']]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('[FCM Token] Could not update FCM token on login: '.$e->getMessage());
+            }
+        }
 
         $this->securityAudit->loginSucceeded($user, $request);
 
