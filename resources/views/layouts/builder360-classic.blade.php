@@ -157,7 +157,10 @@
                 });
 
                 function initWebFcm(msg) {
-                    msg.getToken().then((currentToken) => {
+                    const vapidKey = "{{ config('services.fcm.vapid_key') }}";
+                    const tokenOptions = vapidKey ? { vapidKey: vapidKey } : undefined;
+
+                    msg.getToken(tokenOptions).then((currentToken) => {
                         if (currentToken) {
                             fetch('/api/auth/fcm-token', {
                                 method: 'POST',
@@ -168,8 +171,13 @@
                                 },
                                 body: JSON.stringify({ fcm_token: currentToken })
                             }).catch(function(err) { console.warn('FCM token save error:', err); });
+                        } else {
+                            console.info('[FCM Web] No registration token available. Request permission to generate one.');
                         }
-                    }).catch(function(err) { console.warn('FCM token error:', err); });
+                    }).catch(function(err) {
+                        console.warn('[FCM Web] Token retrieval error:', err);
+                        console.info('[FCM Web Tip] If using Firebase Web Push, set FCM_VAPID_KEY in .env from Firebase Console > Cloud Messaging > Web configuration > Web Push certificates.');
+                    });
                 }
             } catch(e) {
                 console.warn('FCM Web Init error:', e);

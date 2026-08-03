@@ -41,6 +41,7 @@ return [
         'client_email'     => env('FCM_CLIENT_EMAIL', 'firebase-adminsdk-fbsvc@brijchat-6d93f.iam.gserviceaccount.com'),
         'private_key'      => env('FCM_PRIVATE_KEY'),
         'server_key'       => env('FCM_SERVER_KEY', env('FIREBASE_SERVER_KEY')),
+        'vapid_key'        => env('FCM_VAPID_KEY'),
     ],
 
 ];
