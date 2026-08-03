@@ -110,6 +110,7 @@ class AuthApiController extends Controller
         return response()->json([
             'message' => 'Login successful.',
             'token'   => $token,
+            'fcm_token' => $user->fcm_token,
             'user'    => $this->userPayload($user),
         ]);
     }
