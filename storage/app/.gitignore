@@ -2,3 +2,7 @@
 !private/
 !public/
 !.gitignore
+\storage
+storage
+vendor
+.env
