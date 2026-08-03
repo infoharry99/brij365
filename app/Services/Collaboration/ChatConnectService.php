@@ -956,14 +956,22 @@ class ChatConnectService
 
     private function notifyConversationMembers(ChatConversation $conversation, ChatMessage $message, User $actor): void
     {
-        $conversation->activeMembers()
+        $recipients = $conversation->activeMembers()
             ->with('user')
             ->where('user_id', '!=', $actor->id)
             ->where('muted', false)
             ->get()
             ->pluck('user')
-            ->filter()
-            ->each(function (User $recipient) use ($conversation, $message, $actor): void {
+            ->filter();
+
+        // Dispatch FCM Push Notifications to mobile devices (Web & API messages)
+        try {
+            app(\App\Services\Collaboration\FcmNotificationService::class)->sendChatMessageNotification($message, $recipients);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[FCM Push] Notification error: '.$e->getMessage());
+        }
+
+        $recipients->each(function (User $recipient) use ($conversation, $message, $actor): void {
                 $mentions = collect(data_get($message->metadata, 'mentions', []))
                     ->map(fn ($id): int => (int) $id)
                     ->contains((int) $recipient->id);
