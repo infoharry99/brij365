@@ -172,6 +172,58 @@ class AuthApiController extends Controller
     }
 
     /**
+     * POST /api/auth/test-notification
+     * Test sending an FCM Push Notification from Postman.
+     */
+    public function testNotification(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'title'     => ['nullable', 'string', 'max:255'],
+            'body'      => ['nullable', 'string', 'max:1000'],
+            'fcm_token' => ['nullable', 'string', 'max:1000'],
+            'user_id'   => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+
+        $user = $request->user();
+        $targetUser = ! empty($data['user_id'])
+            ? User::query()->find($data['user_id'])
+            : $user;
+
+        $targetToken = $data['fcm_token'] ?? $targetUser?->fcm_token;
+
+        if (! $targetToken) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No FCM token provided or found for target user. Pass fcm_token in request body or update user fcm_token first.',
+            ], 422);
+        }
+
+        $title = $data['title'] ?? 'Test Notification';
+        $body  = $data['body'] ?? 'Hello! This is a test FCM push notification from Postman.';
+
+        $fcmService = app(\App\Services\Collaboration\FcmNotificationService::class);
+        $sent = $fcmService->sendToToken($targetToken, [
+            'title' => $title,
+            'body'  => $body,
+            'data'  => [
+                'type' => 'test_notification',
+                'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+            ],
+        ]);
+
+        return response()->json([
+            'success'          => $sent,
+            'message'          => $sent ? 'Test push notification sent successfully!' : 'FCM delivery failed. Check storage/logs/laravel.log for details.',
+            'target_user_id'   => $targetUser?->id,
+            'target_fcm_token' => $targetToken,
+            'payload'          => [
+                'title' => $title,
+                'body'  => $body,
+            ],
+        ], $sent ? 200 : 500);
+    }
+
+    /**
      * Build a consistent user payload for API responses.
      *
      * @param \App\Models\User $user

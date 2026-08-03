@@ -35,6 +35,7 @@ Route::middleware(['auth:sanctum', 'account.active'])->group(function (): void {
         Route::post('/logout', [AuthApiController::class, 'logout'])->name('logout');
         Route::get('/me', [AuthApiController::class, 'me'])->name('me');
         Route::post('/fcm-token', [AuthApiController::class, 'updateFcmToken'])->name('fcm-token.update');
+        Route::post('/test-notification', [AuthApiController::class, 'testNotification'])->name('test-notification');
     });
 
     // Chat Connect
