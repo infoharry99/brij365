@@ -35,6 +35,7 @@ class ChatMessageResource extends JsonResource
                 'name' => $this->sender->name,
                 'email' => $this->sender->email,
                 'role' => $this->sender->role?->name,
+                'profile_photo_url' => $this->sender->profile_photo_url,
             ] : null,
             'attachments' => $this->whenLoaded('attachments', function () use ($request): array {
                 $isApi = $request->is('api/*') || $request->expectsJson() || $request->bearerToken() !== null;

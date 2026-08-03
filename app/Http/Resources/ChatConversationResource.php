@@ -14,11 +14,20 @@ class ChatConversationResource extends JsonResource
         $membership = $this->whenLoaded('activeMembers', fn () => $this->activeMembers->firstWhere('user_id', $currentUserId), null);
         $latest = $this->whenLoaded('chatMessages', fn () => $this->chatMessages->sortByDesc('created_at')->first(), null);
 
+        $otherUser = null;
+        if ($this->type === 'direct_message' && $this->relationLoaded('activeMembers') && $request->user()) {
+            $otherMember = $this->activeMembers->firstWhere('user_id', '!=', $request->user()->id);
+            $otherUser = $otherMember?->relationLoaded('user') ? $otherMember->user : null;
+        }
+
+        $profilePhotoUrl = $otherUser ? $otherUser->profile_photo_url : data_get($this->metadata, 'avatar_url');
+
         return [
             'id' => $this->id,
             'conversation_key' => $this->conversation_key,
             'type' => $this->type,
             'title' => $request->user() ? $this->displayTitleFor($request->user()) : $this->title,
+            'profile_photo_url' => $profilePhotoUrl,
             'description' => $this->description,
             'visibility' => $this->visibility,
             'department' => $this->department,
@@ -41,6 +50,7 @@ class ChatConversationResource extends JsonResource
                     'id' => $latest->sender->id,
                     'name' => $latest->sender->name,
                     'email' => $latest->sender->email,
+                    'profile_photo_url' => $latest->sender->profile_photo_url,
                 ] : null,
                 'type' => $latest->type,
                 'created_at' => $latest->created_at?->toISOString(),
@@ -59,6 +69,7 @@ class ChatConversationResource extends JsonResource
                 'id' => $this->owner->id,
                 'name' => $this->owner->name,
                 'email' => $this->owner->email,
+                'profile_photo_url' => $this->owner->profile_photo_url,
             ] : null),
             'members' => $this->whenLoaded('activeMembers', fn () => $this->activeMembers->map(fn ($member): array => [
                 'id' => $member->id,
@@ -71,6 +82,7 @@ class ChatConversationResource extends JsonResource
                     'name' => $member->user->name,
                     'email' => $member->user->email,
                     'role' => $member->user->role?->name,
+                    'profile_photo_url' => $member->user->profile_photo_url,
                 ] : null,
             ])->values()->all()),
             'metadata' => $this->metadata ?? [],
