@@ -25,6 +25,10 @@ Route::prefix('auth')->name('api.auth.')->group(function (): void {
     Route::post('/register', [AuthApiController::class, 'register'])->name('register');
 });
 
+Route::post('/verify-user', function (Illuminate\Http\Request $request) {
+    $isRegistered = App\Models\User::where('email', $request->email)->exists();
+    return response()->json(['registered' => $isRegistered]);
+});
 // =========================================================================
 // Protected routes — Sanctum Bearer token required
 // =========================================================================
