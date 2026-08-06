@@ -143,6 +143,13 @@
                                         <input type="search" x-ref="mentionSearch" x-model="query" x-on:input="filter" placeholder="Search teammate name or role..." style="width:100%; padding:5px 8px; font-size:11.5px; border:1px solid #CBD5E1; border-radius:6px; outline:none; font-family:inherit;" x-on:keydown.escape="close">
                                     </header>
                                     <div class="tm-mention-list" style="display:flex; flex-direction:column; gap:4px;">
+                                        <button type="button" data-task-mention-option data-person-id="all" data-person-name="all" data-person-search="all everyone assignees members" x-on:click="select" style="display:flex; align-items:center; gap:8px; padding:6px 8px; border:none; background:#EEF2FF; border-radius:6px; cursor:pointer; text-align:left; width:100%; margin-bottom:4px;" onmouseenter="this.style.background='#E0E7FF';" onmouseleave="this.style.background='#EEF2FF';">
+                                            <span style="width:22px; height:22px; border-radius:50%; background:#4F46E5; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;"><i class="fa-solid fa-users"></i></span>
+                                            <span style="display:flex; flex-direction:column; min-width:0;">
+                                                <b style="font-size:12px; color:#312E81;">@all</b>
+                                                <small style="font-size:10px; color:#4338CA;">All assigned members of this task</small>
+                                            </span>
+                                        </button>
                                         @foreach($users as $userOption)
                                             @php
                                                 $emailPrefix = strstr($userOption->email, '@', true) ?: $userOption->email;

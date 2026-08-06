@@ -234,28 +234,49 @@ class CollaborationService
                 }
             }
 
-            $rawAssigneeIds = ! empty($data['assigned_to_user_ids']) && is_array($data['assigned_to_user_ids'])
-                ? $data['assigned_to_user_ids']
-                : [$data['assigned_to_user_id'] ?? null];
+            $assignAll = ! empty($data['assign_all'])
+                || ! empty($data['assign_to_all'])
+                || (is_array($data['assigned_to_user_ids'] ?? null) && (in_array('all', $data['assigned_to_user_ids'], true) || in_array('@all', $data['assigned_to_user_ids'], true)));
 
-            $assigneeIds = collect($rawAssigneeIds)
-                ->filter()
-                ->map(fn ($id) => (int) $id)
-                ->unique()
-                ->values();
+            if ($assignAll) {
+                $companyScopeId = $data['company_id'] ?? $this->companyScope->companyIdFor($actor);
+                $assignees = User::query()
+                    ->where(function ($query) use ($companyScopeId) {
+                        if ($companyScopeId) {
+                            $query->where('company_id', $companyScopeId);
+                        }
+                    })
+                    ->where('status', 'active')
+                    ->get();
 
-            $primaryAssigneeId = $assigneeIds->first() ?: (int) $actor->id;
+                if ($assignees->isEmpty()) {
+                    $assignees = collect([$actor]);
+                }
+                $primaryAssignee = $assignees->firstWhere('id', (int) ($data['assigned_to_user_id'] ?? null)) ?: $assignees->first();
+            } else {
+                $rawAssigneeIds = ! empty($data['assigned_to_user_ids']) && is_array($data['assigned_to_user_ids'])
+                    ? $data['assigned_to_user_ids']
+                    : [$data['assigned_to_user_id'] ?? null];
 
-            if ($assigneeIds->isEmpty()) {
-                $assigneeIds = collect([$primaryAssigneeId]);
+                $assigneeIds = collect($rawAssigneeIds)
+                    ->filter()
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->values();
+
+                $primaryAssigneeId = $assigneeIds->first() ?: (int) $actor->id;
+
+                if ($assigneeIds->isEmpty()) {
+                    $assigneeIds = collect([$primaryAssigneeId]);
+                }
+
+                if (! $actor->hasPermission('collaboration.manage') && $assigneeIds->contains(fn ($id) => $id !== (int) $actor->id)) {
+                    throw ValidationException::withMessages(['assigned_to_user_ids' => 'Self-service users can create tasks only for themselves.']);
+                }
+
+                $assignees = User::query()->whereIn('id', $assigneeIds->all())->get();
+                $primaryAssignee = $assignees->firstWhere('id', $primaryAssigneeId) ?: User::query()->whereKey($primaryAssigneeId)->firstOrFail();
             }
-
-            if (! $actor->hasPermission('collaboration.manage') && $assigneeIds->contains(fn ($id) => $id !== (int) $actor->id)) {
-                throw ValidationException::withMessages(['assigned_to_user_ids' => 'Self-service users can create tasks only for themselves.']);
-            }
-
-            $assignees = User::query()->whereIn('id', $assigneeIds->all())->get();
-            $primaryAssignee = $assignees->firstWhere('id', $primaryAssigneeId) ?: User::query()->whereKey($primaryAssigneeId)->firstOrFail();
 
             $assigneeCompanyId = $primaryAssignee->company_id
                 ?? ((int) $primaryAssignee->id === (int) $actor->id ? $this->companyScope->companyIdFor($actor) : null);
@@ -331,18 +352,54 @@ class CollaborationService
                 $request,
             );
 
-            foreach ($assignees as $assigneeUser) {
-                if ($assigneeUser->id !== $actor->id) {
-                    $this->notifications->sendToUser($assigneeUser, [
-                        'category' => 'collaboration',
-                        'severity' => $task->priority === 'critical' ? 'critical' : 'info',
-                        'title' => "Task {$task->task_number} assigned",
-                        'body' => $task->title,
-                        'action_url' => '/collaboration/tasks?assigned_to_user_id='.$assigneeUser->id,
-                        'payload' => ['task_number' => $task->task_number, 'priority' => $task->priority],
-                    ], $actor, $task);
+            // Dispatch notifications & "Task Created" system messages in Chat after HTTP response
+            dispatch(function () use ($assignees, $actor, $task): void {
+                $notifications = app(\App\Services\Security\NotificationService::class);
+                foreach ($assignees as $assigneeUser) {
+                    if ((int) $assigneeUser->id !== (int) $actor->id) {
+                        try {
+                            $notifications->sendToUser($assigneeUser, [
+                                'category' => 'collaboration',
+                                'severity' => $task->priority === 'critical' ? 'critical' : 'info',
+                                'title' => "Task {$task->task_number} assigned",
+                                'body' => $task->title,
+                                'action_url' => '/collaboration/tasks?assigned_to_user_id='.$assigneeUser->id,
+                                'payload' => ['task_number' => $task->task_number, 'priority' => $task->priority],
+                            ], $actor, $task);
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::warning('Task creation notification failed: '.$e->getMessage());
+                        }
+                    }
                 }
-            }
+
+                try {
+                    $chatConnect = app(\App\Services\Collaboration\ChatConnectService::class);
+                    foreach ($assignees as $assigneeUser) {
+                        if ((int) $assigneeUser->id === (int) $actor->id) {
+                            continue;
+                        }
+
+                        $dmConversation = $chatConnect->createConversation([
+                            'type' => 'direct_message',
+                            'member_user_ids' => [(int) $assigneeUser->id],
+                        ], $actor);
+
+                        $chatConnect->sendMessage($dmConversation, [
+                            'body' => "📋 Task Created: {$task->task_number} - {$task->title}",
+                            'metadata' => [
+                                'type' => 'task_created',
+                                'task_id' => $task->id,
+                                'task_number' => $task->task_number,
+                                'task_title' => $task->title,
+                                'action_url' => "/collaboration/tasks?task_id={$task->id}",
+                                'synced_from_task' => true,
+                            ],
+                        ], $actor);
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Task creation chat dispatch failed: '.$e->getMessage());
+                }
+            })->afterResponse();
 
             $this->taskRecurrence->synchronize($task);
 
@@ -1180,13 +1237,34 @@ class CollaborationService
                 throw ValidationException::withMessages(['task' => 'The selected task is outside your company scope.']);
             }
 
-            $mentions = $this->validateTaskMentionIds($data['mentions'] ?? [], $task);
+            $body = trim((string) $data['body']);
+            $hasMentionAll = (bool) preg_match('/(^|\s)@all(\b|\s|$)/i', $body);
+
+            // Task involved users (creator, primary assignee, and all assigned members)
+            $taskAssigneeIds = Schema::hasTable('work_task_assignees')
+                ? $task->assignees()->pluck('users.id')->all()
+                : [];
+
+            $involvedUserIds = collect([$task->created_by_user_id, $task->assigned_to_user_id])
+                ->merge($taskAssigneeIds)
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values();
+
+            if ($hasMentionAll) {
+                // When @all is mentioned in a task comment:
+                // Target users are ONLY users involved in that task (assigned members) - NOT every user in the system!
+                $mentions = $involvedUserIds->reject(fn (int $id) => $id === (int) $actor->id)->values()->all();
+            } else {
+                $mentions = $this->validateTaskMentionIds($data['mentions'] ?? [], $task);
+            }
 
             $comment = WorkTaskComment::create([
                 'company_id' => $task->company_id,
                 'work_task_id' => $task->id,
                 'author_user_id' => $actor->id,
-                'body' => trim((string) $data['body']),
+                'body' => $body,
                 'mentions' => $mentions,
                 'metadata' => $data['metadata'] ?? [],
             ]);
@@ -1204,11 +1282,12 @@ class CollaborationService
                 $request,
             );
 
-            $recipientIds = collect([$task->created_by_user_id, $task->assigned_to_user_id])
-                ->merge($mentions)
+            $recipientIds = collect($mentions)
+                ->merge($involvedUserIds)
                 ->filter()
+                ->map(fn ($id) => (int) $id)
                 ->unique()
-                ->reject(fn (int $userId): bool => $userId === $actor->id)
+                ->reject(fn (int $userId): bool => $userId === (int) $actor->id)
                 ->values()
                 ->all();
 
@@ -1224,15 +1303,15 @@ class CollaborationService
                     'payload' => ['task_number' => $task->task_number, 'comment_id' => $comment->id],
                 ], $actor, $task));
 
-            // Sync task comment mention directly to Chat DM
-            if (! empty($mentions) && empty($data['metadata']['synced_from_chat'])) {
+            // Sync task comment automatically into Chat DM for all users involved in that task
+            if (empty($data['metadata']['synced_from_chat'])) {
                 try {
                     $chatConnect = app(\App\Services\Collaboration\ChatConnectService::class);
-                    foreach ($mentions as $mentionedUserId) {
-                        if ((int) $mentionedUserId === (int) $actor->id) {
-                            continue;
-                        }
+                    $targetChatUserIds = $hasMentionAll
+                        ? $involvedUserIds->reject(fn (int $id) => $id === (int) $actor->id)->values()
+                        : collect($mentions)->reject(fn (int $id) => $id === (int) $actor->id)->values();
 
+                    foreach ($targetChatUserIds as $mentionedUserId) {
                         $dmConversation = $chatConnect->createConversation([
                             'type' => 'direct_message',
                             'member_user_ids' => [(int) $mentionedUserId],
@@ -1252,7 +1331,6 @@ class CollaborationService
                         ], $actor, $request);
                     }
                 } catch (\Throwable $e) {
-                    // Log or handle gracefully if chat dispatch fails
                     \Illuminate\Support\Facades\Log::warning('Task comment chat mention dispatch failed: '.$e->getMessage());
                 }
             }
