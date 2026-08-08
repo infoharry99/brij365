@@ -348,13 +348,12 @@ class CollaborationService
                 $request,
             );
 
-            // Dispatch notifications & "Task Created" system messages in Chat after HTTP response
-            dispatch(function () use ($assignees, $actor, $task): void {
-                $notifications = app(\App\Services\Security\NotificationService::class);
+            // Dispatch notifications & "Task Created" system messages in Chat
+            try {
                 foreach ($assignees as $assigneeUser) {
                     if ((int) $assigneeUser->id !== (int) $actor->id) {
                         try {
-                            $notifications->sendToUser($assigneeUser, [
+                            $this->notifications->sendToUser($assigneeUser, [
                                 'category' => 'collaboration',
                                 'severity' => $task->priority === 'critical' ? 'critical' : 'info',
                                 'title' => "Task {$task->task_number} assigned",
@@ -368,21 +367,21 @@ class CollaborationService
                     }
                 }
 
-                try {
-                    $chatConnect = app(\App\Services\Collaboration\ChatConnectService::class);
-                    $dueText = $task->due_at ? ' (Due: '.$task->due_at->format('d M Y, h:i A').')' : '';
-                    $messageBody = "📋 New Task Created: {$task->task_number} - {$task->title}{$dueText}";
+                $chatConnect = app(\App\Services\Collaboration\ChatConnectService::class);
+                $dueText = $task->due_at ? ' (Due: '.$task->due_at->format('d M Y, h:i A').')' : '';
+                $messageBody = "📋 New Task Created: {$task->task_number} - {$task->title}{$dueText}";
 
-                    // 1. Post to each assigned user's DM
-                    foreach ($assignees as $assigneeUser) {
-                        if ((int) $assigneeUser->id === (int) $actor->id) {
-                            continue;
-                        }
+                // 1. Post to each assigned user's DM
+                foreach ($assignees as $assigneeUser) {
+                    if ((int) $assigneeUser->id === (int) $actor->id) {
+                        continue;
+                    }
 
+                    try {
                         $dmConversation = $chatConnect->createConversation([
                             'type' => 'direct_message',
                             'member_user_ids' => [(int) $assigneeUser->id],
-                        ], $actor);
+                        ], $actor, $request);
 
                         $chatConnect->sendMessage($dmConversation, [
                             'body' => $messageBody,
@@ -394,11 +393,15 @@ class CollaborationService
                                 'action_url' => "/collaboration/tasks?task_id={$task->id}",
                                 'synced_from_task' => true,
                             ],
-                        ], $actor);
+                        ], $actor, $request);
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning("Task creation chat dispatch failed for user {$assigneeUser->id}: ".$e->getMessage());
                     }
+                }
 
-                    // 2. If task belongs to a project, also post to project channel
-                    if (! empty($task->project_id)) {
+                // 2. If task belongs to a project, also post to project channel
+                if (! empty($task->project_id)) {
+                    try {
                         $projectChannel = \App\Models\ChatConversation::query()
                             ->where('type', 'project_channel')
                             ->where('project_id', $task->project_id)
@@ -415,13 +418,15 @@ class CollaborationService
                                     'action_url' => "/collaboration/tasks?task_id={$task->id}",
                                     'synced_from_task' => true,
                                 ],
-                            ], $actor);
+                            ], $actor, $request);
                         }
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Task creation project channel chat dispatch failed: '.$e->getMessage());
                     }
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Task creation chat dispatch failed: '.$e->getMessage());
                 }
-            })->afterResponse();
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Task creation notification & chat dispatch failed: '.$e->getMessage());
+            }
 
             $this->taskRecurrence->synchronize($task);
 
