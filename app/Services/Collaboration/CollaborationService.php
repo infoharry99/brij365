@@ -370,6 +370,10 @@ class CollaborationService
 
                 try {
                     $chatConnect = app(\App\Services\Collaboration\ChatConnectService::class);
+                    $dueText = $task->due_at ? ' (Due: '.$task->due_at->format('d M Y, h:i A').')' : '';
+                    $messageBody = "📋 New Task Created: {$task->task_number} - {$task->title}{$dueText}";
+
+                    // 1. Post to each assigned user's DM
                     foreach ($assignees as $assigneeUser) {
                         if ((int) $assigneeUser->id === (int) $actor->id) {
                             continue;
@@ -381,7 +385,7 @@ class CollaborationService
                         ], $actor);
 
                         $chatConnect->sendMessage($dmConversation, [
-                            'body' => "📋 Task Created: {$task->task_number} - {$task->title}",
+                            'body' => $messageBody,
                             'metadata' => [
                                 'type' => 'task_created',
                                 'task_id' => $task->id,
@@ -391,6 +395,28 @@ class CollaborationService
                                 'synced_from_task' => true,
                             ],
                         ], $actor);
+                    }
+
+                    // 2. If task belongs to a project, also post to project channel
+                    if (! empty($task->project_id)) {
+                        $projectChannel = \App\Models\ChatConversation::query()
+                            ->where('type', 'project_channel')
+                            ->where('project_id', $task->project_id)
+                            ->first();
+
+                        if ($projectChannel) {
+                            $chatConnect->sendMessage($projectChannel, [
+                                'body' => $messageBody,
+                                'metadata' => [
+                                    'type' => 'task_created',
+                                    'task_id' => $task->id,
+                                    'task_number' => $task->task_number,
+                                    'task_title' => $task->title,
+                                    'action_url' => "/collaboration/tasks?task_id={$task->id}",
+                                    'synced_from_task' => true,
+                                ],
+                            ], $actor);
+                        }
                     }
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning('Task creation chat dispatch failed: '.$e->getMessage());
