@@ -55,10 +55,6 @@ class CollaborationService
     ) {
     }
 
-    /**
-     * @param array<string, mixed> $filters
-     * @return Builder<WorkTask>
-     */
     public function taskIndexQuery(User $user, array $filters = []): Builder
     {
         $tasksQuery = WorkTask::query()
