@@ -18,9 +18,17 @@ final class CalendarLifecycleManager
     public function instant(mixed $value, string $timezone): Carbon
     {
         $raw = trim((string) $value);
-        $hasOffset = preg_match('/(?:Z|[+-]\d{2}:?\d{2})$/i', $raw) === 1;
+        if ($raw === '') {
+            return now();
+        }
 
-        return ($hasOffset ? Carbon::parse($raw) : Carbon::parse($raw, $timezone))->utc();
+        $hasOffset = preg_match('/(?:Z|[+-]\d{2}:?\d{2})$/i', $raw) === 1;
+        $appTimezone = config('app.timezone', 'Asia/Kolkata');
+        $targetTimezone = ! empty($timezone) ? $timezone : $appTimezone;
+
+        $dt = $hasOffset ? Carbon::parse($raw) : Carbon::parse($raw, $targetTimezone);
+
+        return $dt->setTimezone($appTimezone);
     }
 
     public function assertVersion(CalendarEvent $event, mixed $submitted): void
